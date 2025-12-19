@@ -39,6 +39,9 @@ public class QuestionController {
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String difficulty) {
         
+        System.out.println("======= QuestionController.getQuestionList =======");
+        System.out.println("接收参数: page=" + page + ", size=" + size + ", subject='" + subject + "', type='" + type + "', difficulty='" + difficulty + "'");
+        
         Page<Question> questionPage = questionService.getQuestionPage(page, size, subject, type, difficulty);
         
         PageResult<Question> pageResult = new PageResult<>(
@@ -88,7 +91,7 @@ public class QuestionController {
             question.setPracticeCount(0);
         }
 
-        boolean success = questionService.save(question);
+        boolean success = questionService.saveQuestion(question);
         return success ? Result.success("添加成功") : Result.error("添加失败");
     }
 
@@ -102,7 +105,7 @@ public class QuestionController {
     @PutMapping("/{id}")
     public Result<String> updateQuestion(@PathVariable Long id, @RequestBody Question question) {
         question.setId(id);
-        boolean success = questionService.updateById(question);
+        boolean success = questionService.updateQuestion(question);
         return success ? Result.success("更新成功") : Result.error("更新失败");
     }
 
@@ -114,7 +117,7 @@ public class QuestionController {
      */
     @DeleteMapping("/{id}")
     public Result<String> deleteQuestion(@PathVariable Long id) {
-        boolean success = questionService.removeById(id);
+        boolean success = questionService.deleteQuestion(id);
         return success ? Result.success("删除成功") : Result.error("删除失败");
     }
 
@@ -126,7 +129,7 @@ public class QuestionController {
      */
     @DeleteMapping("/batch")
     public Result<String> batchDeleteQuestions(@RequestBody java.util.List<Long> ids) {
-        boolean success = questionService.removeByIds(ids);
+        boolean success = questionService.batchDeleteQuestions(ids);
         return success ? Result.success("批量删除成功") : Result.error("批量删除失败");
     }
 

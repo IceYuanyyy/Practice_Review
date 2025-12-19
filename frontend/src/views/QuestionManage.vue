@@ -10,18 +10,12 @@
             </template>
             新增题目
           </n-button>
-          <n-upload
-            :show-file-list="false"
-            :custom-request="handleImport"
-            accept=".xlsx,.xls,.csv"
-          >
-            <n-button>
-              <template #icon>
-                <n-icon :component="CloudUploadOutline" />
-              </template>
-              导入Excel
-            </n-button>
-          </n-upload>
+          <n-button @click="showImportModal = true">
+            <template #icon>
+              <n-icon :component="CloudUploadOutline" />
+            </template>
+            导入Excel
+          </n-button>
           <n-button @click="handleExport">
             <template #icon>
               <n-icon :component="CloudDownloadOutline" />
@@ -60,7 +54,7 @@
             clearable
             style="width: 150px"
             :options="subjectOptions"
-            @update:value="loadQuestions"
+            @update:value="handleFilterChange"
           />
           <n-select
             v-model:value="filters.type"
@@ -68,14 +62,14 @@
             clearable
             style="width: 150px"
             :options="typeOptions"
-            @update:value="loadQuestions"
+            @update:value="handleFilterChange"
           />
           <n-input
             v-model:value="filters.keyword"
             placeholder="搜索题目"
             clearable
             style="width: 200px"
-            @keyup.enter="loadQuestions"
+            @keyup.enter="handleFilterChange"
           >
             <template #prefix>
               <n-icon :component="SearchOutline" />
@@ -91,11 +85,12 @@
         :columns="columns"
         :data="questions"
         :loading="loading"
-        :pagination="pagination"
+        :pagination="paginationReactive"
         :bordered="false"
         :row-key="(row) => row.id"
         v-model:checked-row-keys="checkedRowKeys"
         @update:page="handlePageChange"
+        @update:page-size="handlePageSizeChange"
       />
     </n-card>
 
@@ -160,7 +155,13 @@
         </n-form-item>
         
         <n-form-item label="科目" path="subject">
-          <n-input v-model:value="formData.subject" placeholder="请输入科目" />
+          <n-select 
+            v-model:value="formData.subject" 
+            :options="subjectOptions.map(opt => ({ label: opt.value, value: opt.value }))"
+            placeholder="请选择或输入科目"
+            filterable
+            tag
+          />
         </n-form-item>
 
         <n-form-item label="题目" path="content">
@@ -172,19 +173,19 @@
           />
         </n-form-item>
 
-        <n-form-item v-if="formData.type === 'choice'" label="选项A" path="optionA">
+          <n-form-item v-if="formData.type === 'single-choice' || formData.type === 'multiple-choice' || formData.type === 'choice'" label="选项A" path="optionA">
           <n-input v-model:value="formData.optionA" placeholder="请输入选项A" />
         </n-form-item>
 
-        <n-form-item v-if="formData.type === 'choice'" label="选项B" path="optionB">
+          <n-form-item v-if="formData.type === 'single-choice' || formData.type === 'multiple-choice' || formData.type === 'choice'" label="选项B" path="optionB">
           <n-input v-model:value="formData.optionB" placeholder="请输入选项B" />
         </n-form-item>
 
-        <n-form-item v-if="formData.type === 'choice'" label="选项C" path="optionC">
+          <n-form-item v-if="formData.type === 'single-choice' || formData.type === 'multiple-choice' || formData.type === 'choice'" label="选项C" path="optionC">
           <n-input v-model:value="formData.optionC" placeholder="请输入选项C" />
         </n-form-item>
 
-        <n-form-item v-if="formData.type === 'choice'" label="选项D" path="optionD">
+          <n-form-item v-if="formData.type === 'single-choice' || formData.type === 'multiple-choice' || formData.type === 'choice'" label="选项D" path="optionD">
           <n-input v-model:value="formData.optionD" placeholder="请输入选项D" />
         </n-form-item>
 
@@ -213,6 +214,46 @@
         </n-space>
       </template>
     </n-modal>
+
+    <!-- 导入对话框 -->
+    <n-modal v-model:show="showImportModal" preset="dialog" title="导入Excel题库" style="width: 500px">
+      <n-space vertical :size="16">
+        <n-alert type="info" title="导入说明">
+          请选择Excel文件并指定科目名称，所有导入的题目将归类到指定科目下。
+        </n-alert>
+        
+        <n-form-item label="科目名称">
+          <n-select 
+            v-model:value="importSubject" 
+            :options="subjectOptions.map(opt => ({ label: opt.value, value: opt.value }))"
+            placeholder="请选择或输入科目名称"
+            filterable
+            tag
+          />
+        </n-form-item>
+
+        <n-upload
+          :show-file-list="true"
+          :max="1"
+          accept=".xlsx,.xls,.csv"
+          :custom-request="handleImportFile"
+          @before-upload="beforeUpload"
+        >
+          <n-button block>
+            <template #icon>
+              <n-icon :component="CloudUploadOutline" />
+            </template>
+            选择文件
+          </n-button>
+        </n-upload>
+      </n-space>
+
+      <template #action>
+        <n-space justify="end">
+          <n-button @click="showImportModal = false">取消</n-button>
+        </n-space>
+      </template>
+    </n-modal>
   </n-space>
 </template>
 
@@ -227,11 +268,14 @@ import {
   CreateOutline, TrashOutline
 } from '@vicons/ionicons5'
 import { getQuestionList, addQuestion, updateQuestion, deleteQuestion, importExcel, exportExcel, batchDeleteQuestions, clearAllQuestions } from '@/api/question'
+import { getAllSubjects } from '@/api/subject'
 
 const message = useMessage()
 const loading = ref(false)
 const showAddModal = ref(false)
 const showClearModal = ref(false)
+const showImportModal = ref(false)
+const importSubject = ref('')
 const editingQuestion = ref(null)
 const formRef = ref(null)
 const checkedRowKeys = ref([])
@@ -249,13 +293,25 @@ const clearPreview = computed(() => {
   } else if (clearOptions.mode === 'bySubject' && clearOptions.subject) {
     return `将清空科目为"${clearOptions.subject}"的所有题目`
   } else if (clearOptions.mode === 'byType' && clearOptions.type) {
-    const typeName = clearOptions.type === 'choice' ? '选择题' : '判断题'
+    const typeNameMap = {
+      'single-choice': '单选题',
+      'multiple-choice': '多选题',
+      'choice': '选择题',
+      'judge': '判断题'
+    }
+    const typeName = typeNameMap[clearOptions.type] || clearOptions.type
     return `将清空所有${typeName}`
   } else if (clearOptions.mode === 'custom') {
     const parts = []
     if (clearOptions.subject) parts.push(`科目:"${clearOptions.subject}"`)
     if (clearOptions.type) {
-      const typeName = clearOptions.type === 'choice' ? '选择题' : '判断题'
+      const typeNameMap = {
+        'single-choice': '单选题',
+        'multiple-choice': '多选题',
+        'choice': '选择题',
+        'judge': '判断题'
+      }
+      const typeName = typeNameMap[clearOptions.type] || clearOptions.type
       parts.push(`题型:${typeName}`)
     }
     return parts.length > 0 ? `将清空 ${parts.join('，')} 的题目` : '请选择清空条件'
@@ -270,31 +326,49 @@ const filters = reactive({
   keyword: ''
 })
 
-// 分页
-const pagination = reactive({
-  page: 1,
-  pageSize: 10,
-  itemCount: 0,
+// 分页状态
+const currentPage = ref(1)
+const currentPageSize = ref(10)
+const totalCount = ref(0)
+
+// 分页配置 - 使用 computed 保持响应性
+const paginationReactive = computed(() => ({
+  page: currentPage.value,
+  pageSize: currentPageSize.value,
+  itemCount: totalCount.value,
   showSizePicker: true,
   pageSizes: [10, 20, 50, 100],
-  onChange: (page) => {
-    pagination.page = page
-    loadQuestions()
-  },
-  onUpdatePageSize: (pageSize) => {
-    pagination.pageSize = pageSize
-    pagination.page = 1
-    loadQuestions()
-  }
-})
+  prefix: ({ itemCount }) => `共 ${itemCount} 条`
+}))
+
+// 分页改变处理
+const handlePageChange = (page) => {
+  console.log('分页改变:', page)
+  currentPage.value = page
+  loadQuestions()
+}
+
+const handlePageSizeChange = (pageSize) => {
+  console.log('每页条数改变:', pageSize)
+  currentPageSize.value = pageSize
+  currentPage.value = 1
+  loadQuestions()
+}
+
+// 筛选条件改变处理
+const handleFilterChange = () => {
+  console.log('筛选条件改变:', filters)
+  currentPage.value = 1  // 重置到第一页
+  loadQuestions()
+}
 
 // 题目列表
 const questions = ref([])
 
 // 表单数据
 const formData = reactive({
-  type: 'choice',
-  subject: '习思想',
+  type: 'single-choice',
+  subject: '',
   content: '',
   optionA: '',
   optionB: '',
@@ -314,13 +388,33 @@ const rules = {
 }
 
 // 选项
-const subjectOptions = [
-  { label: '习思想', value: '习思想' },
+const subjectOptions = ref([
   { label: '未分类', value: '未分类' }
-]
+])
+
+// 加载科目列表
+const loadSubjects = async () => {
+  try {
+    const res = await getAllSubjects()
+    if (res.data && res.data.length > 0) {
+      subjectOptions.value = res.data.map(subject => ({
+        label: `${subject.name} (${subject.questionCount})`,
+        value: subject.name
+      }))
+      // 确保"未分类"选项存在
+      if (!subjectOptions.value.some(opt => opt.value === '未分类')) {
+        subjectOptions.value.push({ label: '未分类', value: '未分类' })
+      }
+    }
+  } catch (error) {
+    console.error('加载科目列表失败', error)
+    message.error('加载科目列表失败')
+  }
+}
 
 const typeOptions = [
-  { label: '选择题', value: 'choice' },
+  { label: '单选题', value: 'single-choice' },
+  { label: '多选题', value: 'multiple-choice' },
   { label: '判断题', value: 'judge' }
 ]
 
@@ -339,9 +433,16 @@ const columns = [
     key: 'type',
     width: 100,
     render: (row) => {
+      const typeMap = {
+        'single-choice': { type: 'info', text: '单选题' },
+        'multiple-choice': { type: 'warning', text: '多选题' },
+        'choice': { type: 'info', text: '选择题' },
+        'judge': { type: 'success', text: '判断题' }
+      }
+      const config = typeMap[row.type] || { type: 'default', text: row.type }
       return h(NTag, 
-        { type: row.type === 'choice' ? 'info' : 'success', size: 'small' },
-        { default: () => row.type === 'choice' ? '选择题' : '判断题' }
+        { type: config.type, size: 'small' },
+        { default: () => config.text }
       )
     }
   },
@@ -412,14 +513,23 @@ const loadQuestions = async () => {
   loading.value = true
   try {
     const params = {
-      page: pagination.page,
-      size: pagination.pageSize,
-      ...filters
+      page: currentPage.value,
+      size: currentPageSize.value
     }
+    // 只添加非空的筛选条件
+    if (filters.subject) params.subject = filters.subject
+    if (filters.type) params.type = filters.type
+    if (filters.keyword) params.keyword = filters.keyword
+    
+    console.log('loadQuestions params:', params)
+    
     const res = await getQuestionList(params)
     questions.value = res.data.records
-    pagination.itemCount = res.data.total
+    totalCount.value = res.data.total
+    
+    console.log('loadQuestions result:', res.data)
   } catch (error) {
+    console.error('加载题目失败', error)
     message.error('加载题目失败')
   } finally {
     loading.value = false
@@ -432,7 +542,7 @@ const handleEdit = (row) => {
   Object.assign(formData, row)
   
   // 解析选项
-  if (row.type === 'choice' && row.options) {
+  if ((row.type === 'single-choice' || row.type === 'multiple-choice' || row.type === 'choice') && row.options) {
     try {
       // 后端返回的 options 已经是数组了
       const options = Array.isArray(row.options) 
@@ -508,7 +618,7 @@ const resetForm = () => {
   editingQuestion.value = null
   Object.assign(formData, {
     type: 'choice',
-    subject: '习思想',
+    subject: '',
     content: '',
     optionA: '',
     optionB: '',
@@ -520,11 +630,29 @@ const resetForm = () => {
   })
 }
 
+// 导入前验证
+const beforeUpload = ({ file }) => {
+  if (!importSubject.value || importSubject.value.trim() === '') {
+    message.error('请先选择或输入科目名称')
+    return false
+  }
+  return true
+}
+
 // 导入Excel
-const handleImport = async ({ file }) => {
+const handleImportFile = async ({ file }) => {
+  if (!importSubject.value || importSubject.value.trim() === '') {
+    message.error('请先选择或输入科目名称')
+    return
+  }
+
   try {
-    const res = await importExcel(file.file)
+    const res = await importExcel(file.file, importSubject.value)
     message.success(`导入成功！总计：${res.data.total}，成功：${res.data.success}，失败：${res.data.fail}`)
+    showImportModal.value = false
+    importSubject.value = ''
+    // 重新加载科目列表和题目列表
+    await loadSubjects()
     loadQuestions()
   } catch (error) {
     message.error('导入失败')
@@ -546,12 +674,6 @@ const handleExport = async () => {
   } catch (error) {
     message.error('导出失败')
   }
-}
-
-// 分页改变
-const handlePageChange = (page) => {
-  pagination.page = page
-  loadQuestions()
 }
 
 // 批量删除
@@ -604,6 +726,7 @@ const confirmClear = async () => {
 }
 
 onMounted(() => {
+  loadSubjects()
   loadQuestions()
 })
 </script>

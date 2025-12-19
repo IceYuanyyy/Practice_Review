@@ -32,8 +32,12 @@
           <n-space justify="space-between">
             <n-space>
               <n-text strong>第 {{ index + 1 }} 题</n-text>
-              <n-tag :type="question.type === 'choice' ? 'info' : 'success'">
-                {{ question.type === 'choice' ? '选择题' : '判断题' }}
+              <n-tag :type="question.type === 'single-choice' || question.type === 'choice' ? 'info' : question.type === 'multiple-choice' ? 'warning' : 'success'">
+                {{ 
+                  question.type === 'single-choice' ? '单选题' : 
+                  question.type === 'multiple-choice' ? '多选题' : 
+                  question.type === 'choice' ? '选择题' : '判断题' 
+                }}
               </n-tag>
               <n-tag>{{ question.subject }}</n-tag>
             </n-space>
@@ -41,7 +45,7 @@
 
           <n-text style="font-size: 15px">{{ question.content }}</n-text>
 
-          <n-space v-if="question.type === 'choice'" vertical>
+          <n-space v-if="question.type === 'single-choice' || question.type === 'multiple-choice' || question.type === 'choice'" vertical>
             <n-text v-for="option in parseOptions(question.options)" :key="option">
               {{ option }}
             </n-text>

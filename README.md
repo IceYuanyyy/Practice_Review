@@ -36,21 +36,25 @@
 ### 📝 题目管理
 - ✅ 题目增删改查（CRUD）
 - 📊 分页查询与多条件筛选
-- 🏷️ 支持单选、多选、判断题
-- 📁 科目分类管理
+- 🏷️ 支持单选题、多选题、判断题
+- 📁 科目分类自动管理
+- 💾 科目题目数量自动统计
 - ⭐ 题目收藏标记
 - 📈 练习次数与错题统计
+- 🎯 导入时可自定义科目名称
 
 </td>
     <td width="50%">
 
 ### 📥 Excel 导入导出
-- 📤 批量导入题目
+- 📤 批量导入题目（支持自定义科目）
 - 📊 Excel模板下载
 - 🔄 选择题与判断题分别导入
 - ✅ 数据校验与错误提示
 - 📑 题目导出功能
 - 🎯 支持自定义字段映射
+- 🏷️ 导入时动态创建科目
+- 📈 自动同步科目题目数量
 
 </td>
   </tr>
@@ -97,9 +101,11 @@ Maven              │ 项目构建工具
 **核心特性：**
 - 🚀 RESTful API 设计
 - 📦 统一结果封装
-- 📄 分页查询支持
+- 📄 分页查询支持（最大1000条）
 - 🔄 跨域配置
 - 📝 自动代码生成
+- 🏷️ 科目表自动管理
+- 📊 题目统计自动更新
 
 ### 前端技术
 
@@ -146,18 +152,21 @@ COLLATE utf8mb4_unicode_ci;
 -- question表
 CREATE TABLE question (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
-    type VARCHAR(50) NOT NULL COMMENT '题型',
-    subject VARCHAR(100) NOT NULL COMMENT '科目',
+    type VARCHAR(50) NOT NULL COMMENT '题型：single-choice(单选题)/multiple-choice(多选题)/judge(判断题)',
+    subject VARCHAR(100) NOT NULL DEFAULT '未分类' COMMENT '科目',
     content TEXT NOT NULL COMMENT '题目内容',
     options JSON COMMENT '选项（JSON数组）',
     answer VARCHAR(200) NOT NULL COMMENT '答案',
     analysis TEXT COMMENT '解析',
-    difficulty VARCHAR(20) DEFAULT 'medium' COMMENT '难度',
+    difficulty VARCHAR(20) DEFAULT 'medium' COMMENT '难度：easy/medium/hard',
     is_marked TINYINT(1) DEFAULT 0 COMMENT '是否收藏',
     practice_count INT DEFAULT 0 COMMENT '练习次数',
     wrong_count INT DEFAULT 0 COMMENT '错误次数',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_type (type),
+    INDEX idx_subject (subject),
+    INDEX idx_difficulty (difficulty)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='题目表';
 
 -- practice_record表
@@ -170,12 +179,14 @@ CREATE TABLE practice_record (
     FOREIGN KEY (question_id) REFERENCES question(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='练习记录表';
 
--- subject表（可选）
+-- subject表（科目管理）
 CREATE TABLE subject (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
     name VARCHAR(100) NOT NULL UNIQUE COMMENT '科目名称',
+    question_count INT DEFAULT 0 COMMENT '题目数量',
     description VARCHAR(500) COMMENT '科目描述',
-    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科目表';
 ```
 
@@ -326,13 +337,22 @@ Final_Practice/
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
-| `/api/questions` | GET | 分页查询题目列表 |
+| `/api/questions` | GET | 分页查询题目列表（支持subject/type/difficulty筛选） |
 | `/api/questions/{id}` | GET | 获取题目详情 |
 | `/api/questions` | POST | 新增题目 |
 | `/api/questions/{id}` | PUT | 更新题目 |
-| `/api/questions/{id}` | DELETE | 删除题目 |
+| `/api/questions/{id}` | DELETE | 删除题目（自动更新科目统计） |
 | `/api/questions/batch` | DELETE | 批量删除题目 |
+| `/api/questions/clear` | POST | 清空题库（支持按科目/题型筛选） |
 | `/api/questions/random` | GET | 随机获取题目 |
+
+### 科目管理接口
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/subjects` | GET | 获取所有科目列表 |
+| `/api/subjects/recount` | POST | 重新统计所有科目题目数量 |
+| `/api/subjects/{subject}/recount` | POST | 重新统计指定科目题目数量 |
 
 ### 练习功能接口
 
@@ -347,8 +367,7 @@ Final_Practice/
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
-| `/api/import/choice` | POST | 导入选择题 |
-| `/api/import/judge` | POST | 导入判断题 |
+| `/api/import/excel` | POST | 导入Excel题目（支持自定义科目参数） |
 | `/api/import/template/choice` | GET | 下载选择题模板 |
 | `/api/import/template/judge` | GET | 下载判断题模板 |
 | `/api/export` | POST | 导出题目 |
@@ -359,6 +378,8 @@ Final_Practice/
 - 支持题目的增删改查
 - 多条件筛选（科目、题型、难度）
 - 分页展示与批量操作
+- 科目动态加载与自动统计
+- 支持单选题、多选题、判断题三种题型
 
 ### 智能练习
 - 优雅的答题界面
@@ -427,11 +448,18 @@ npm run preview
 ### 1. 导入题目
 
 1. 访问「题目管理」页面
-2. 点击「导入题目」按钮
-3. 选择题目类型（选择题/判断题）
-4. 下载对应的Excel模板
-5. 按照模板格式填写题目
-6. 上传Excel文件完成导入
+2. 点击「批量导入」按钮
+3. 在导入对话框中选择或输入科目名称（支持筛选和新建）
+4. 选择Excel文件进行上传
+5. 系统自动识别题目类型（单选/多选/判断）
+6. 导入成功后自动更新科目列表和题目统计
+
+**注意事项：**
+- Excel文件必须包含：题目内容、选项（选择题）、答案等字段
+- 单选题答案为单个字母（如A）
+- 多选题答案为多个字母（如ABC）
+- 判断题答案为"正确"或"错误"
+- 导入时会自动创建新科目（如果不存在）
 
 ### 2. 开始练习
 

@@ -95,8 +95,8 @@
             </div>
           </template>
           
-          <!-- 选择题（兼容旧数据 choice 类型）-->
-          <template v-if="currentQuestion.type === 'choice' && options.length > 0">
+          <!-- 选择题（兼容所有选择题类型：single-choice, multiple-choice, choice）-->
+          <template v-if="(currentQuestion.type === 'single-choice' || currentQuestion.type === 'multiple-choice' || currentQuestion.type === 'choice') && options.length > 0">
             <div 
               v-for="option in options" 
               :key="option.key"
@@ -198,6 +198,7 @@ import { useMessage, useDialog, NCard, NForm, NFormItem, NGrid, NGridItem, NSele
 import { CloseOutline, CheckmarkCircle, CloseCircle, CheckmarkOutline } from '@vicons/ionicons5'
 import { getRandomQuestion } from '@/api/question'
 import { submitAnswer as submitAnswerApi } from '@/api/practice'
+import { getAllSubjects } from '@/api/subject'
 import { usePracticeStore } from '@/stores/practice'
 
 const router = useRouter()
@@ -211,10 +212,29 @@ const selectedAnswers = ref([]) // 多选题答案数组
 const filters = reactive({ subject: null, type: null, difficulty: null })
 
 // 选项配置
-const subjectOptions = [
-  { label: '习思想', value: '习思想' }, 
-  { label: '未分类', value: '未分类' }
-]
+const subjectOptions = ref([
+  { label: '全部科目', value: null }
+])
+
+// 加载科目列表
+const loadSubjects = async () => {
+  try {
+    const res = await getAllSubjects()
+    if (res.data && res.data.length > 0) {
+      const subjects = res.data.map(subject => ({
+        label: `${subject.name} (${subject.questionCount})`,
+        value: subject.name
+      }))
+      subjectOptions.value = [
+        { label: '全部科目', value: null },
+        ...subjects
+      ]
+    }
+  } catch (error) {
+    console.error('加载科目列表失败', error)
+  }
+}
+
 const typeOptions = [
   { label: '单选题', value: 'single-choice' },
   { label: '多选题', value: 'multiple-choice' },
@@ -419,7 +439,10 @@ const handleKeyup = (e) => {
   }
 }
 
-onMounted(() => window.addEventListener('keyup', handleKeyup))
+onMounted(() => {
+  loadSubjects()
+  window.addEventListener('keyup', handleKeyup)
+})
 onUnmounted(() => window.removeEventListener('keyup', handleKeyup))
 
 const startPractice = async () => {

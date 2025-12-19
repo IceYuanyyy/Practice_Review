@@ -89,9 +89,12 @@ export function getRandomQuestion(params) {
 /**
  * 导入 Excel
  */
-export function importExcel(file) {
+export function importExcel(file, subject) {
   const formData = new FormData()
   formData.append('file', file)
+  if (subject) {
+    formData.append('subject', subject)
+  }
   return request({
     url: '/import/excel',
     method: 'post',

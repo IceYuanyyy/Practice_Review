@@ -9,6 +9,7 @@ import com.exam.entity.Question;
 import com.exam.listener.ChoiceQuestionImportListener;
 import com.exam.listener.JudgeQuestionImportListener;
 import com.exam.service.QuestionService;
+import com.exam.service.SubjectService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -36,14 +37,20 @@ public class ImportController {
     @Autowired
     private QuestionService questionService;
 
+    @Autowired
+    private SubjectService subjectService;
+
     /**
      * Excel 批量导入题目
      * 
      * @param file Excel 文件
+     * @param subject 自定义科目名称（可选，如果提供则覆盖Excel中的科目）
      * @return 导入结果
      */
     @PostMapping("/excel")
-    public Result<Map<String, Object>> importExcel(@RequestParam("file") MultipartFile file) {
+    public Result<Map<String, Object>> importExcel(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "subject", required = false) String subject) {
         if (file.isEmpty()) {
             return Result.error("文件不能为空");
         }
@@ -54,9 +61,9 @@ public class ImportController {
         }
 
         try {
-            // 创建监听器
-            ChoiceQuestionImportListener choiceListener = new ChoiceQuestionImportListener(questionService);
-            JudgeQuestionImportListener judgeListener = new JudgeQuestionImportListener(questionService);
+            // 创建监听器，传入自定义科目名称
+            ChoiceQuestionImportListener choiceListener = new ChoiceQuestionImportListener(questionService, subjectService, subject);
+            JudgeQuestionImportListener judgeListener = new JudgeQuestionImportListener(questionService, subjectService, subject);
 
             int totalSuccess = 0;
             int totalFail = 0;

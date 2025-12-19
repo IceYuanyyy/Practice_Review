@@ -42,4 +42,36 @@ public interface QuestionService extends IService<Question> {
      * @return 删除的题目数量
      */
     int clearAll(String subject, String type);
+
+    /**
+     * 保存题目（同时更新科目表）
+     * 
+     * @param question 题目对象
+     * @return 是否成功
+     */
+    boolean saveQuestion(Question question);
+
+    /**
+     * 更新题目（同时更新科目表）
+     * 
+     * @param question 题目对象
+     * @return 是否成功
+     */
+    boolean updateQuestion(Question question);
+
+    /**
+     * 删除题目（同时更新科目表）
+     * 
+     * @param id 题目ID
+     * @return 是否成功
+     */
+    boolean deleteQuestion(Long id);
+
+    /**
+     * 批量删除题目（同时更新科目表）
+     * 
+     * @param ids 题目ID列表
+     * @return 是否成功
+     */
+    boolean batchDeleteQuestions(java.util.List<Long> ids);
 }

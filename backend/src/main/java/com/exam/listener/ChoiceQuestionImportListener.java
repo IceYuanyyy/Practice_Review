@@ -5,10 +5,13 @@ import com.alibaba.excel.event.AnalysisEventListener;
 import com.exam.dto.QuestionImportDTO;
 import com.exam.entity.Question;
 import com.exam.service.QuestionService;
+import com.exam.service.SubjectService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 选择题导入监听器
@@ -23,11 +26,21 @@ public class ChoiceQuestionImportListener extends AnalysisEventListener<Question
     
     private List<Question> questions = new ArrayList<>();
     private QuestionService questionService;
+    private SubjectService subjectService;
+    private String customSubject; // 自定义科目名称
     private int successCount = 0;
     private int failCount = 0;
+    // 统计每个科目导入的题目数量
+    private Map<String, Integer> subjectCountMap = new HashMap<>();
 
-    public ChoiceQuestionImportListener(QuestionService questionService) {
+    public ChoiceQuestionImportListener(QuestionService questionService, SubjectService subjectService) {
+        this(questionService, subjectService, null);
+    }
+
+    public ChoiceQuestionImportListener(QuestionService questionService, SubjectService subjectService, String customSubject) {
         this.questionService = questionService;
+        this.subjectService = subjectService;
+        this.customSubject = customSubject;
     }
 
     @Override
@@ -50,11 +63,23 @@ public class ChoiceQuestionImportListener extends AnalysisEventListener<Question
     public void doAfterAllAnalysed(AnalysisContext context) {
         // 保存剩余数据
         saveBatch();
+        
+        // 更新科目表中的题目数量
+        for (Map.Entry<String, Integer> entry : subjectCountMap.entrySet()) {
+            subjectService.incrementQuestionCount(entry.getKey(), entry.getValue());
+        }
+        
         log.info("选择题导入完成，成功: {}，失败: {}", successCount, failCount);
     }
 
     private void saveBatch() {
         if (!questions.isEmpty()) {
+            // 统计每个科目的题目数量
+            for (Question question : questions) {
+                String subject = question.getSubject();
+                subjectCountMap.put(subject, subjectCountMap.getOrDefault(subject, 0) + 1);
+            }
+            
             questionService.saveBatch(questions);
             successCount += questions.size();
             questions.clear();
@@ -95,7 +120,14 @@ public class ChoiceQuestionImportListener extends AnalysisEventListener<Question
         
         question.setAnswer(dto.getAnswer() != null ? dto.getAnswer().toUpperCase() : "");
         question.setAnalysis(dto.getAnalysis());
-        question.setSubject(dto.getSubject() != null ? dto.getSubject() : "未分类");
+        
+        // 如果有自定义科目，使用自定义科目；否则使用Excel中的科目
+        if (customSubject != null && !customSubject.trim().isEmpty()) {
+            question.setSubject(customSubject.trim());
+        } else {
+            question.setSubject(dto.getSubject() != null ? dto.getSubject() : "未分类");
+        }
+        
         question.setDifficulty(dto.getDifficulty() != null ? dto.getDifficulty() : "medium");
         question.setIsMarked(false);
         question.setWrongCount(0);
