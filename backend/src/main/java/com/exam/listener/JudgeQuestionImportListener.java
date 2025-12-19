@@ -8,6 +8,7 @@ import com.exam.service.QuestionService;
 import com.exam.service.SubjectService;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -78,9 +79,14 @@ public class JudgeQuestionImportListener extends AnalysisEventListener<JudgeQues
             for (Question question : questions) {
                 String subject = question.getSubject();
                 subjectCountMap.put(subject, subjectCountMap.getOrDefault(subject, 0) + 1);
+                //由于mybatis的saveBatch方法不会自动填充字段，这里先将创建和修改时间赋值
+                question.setCreateTime(LocalDateTime.now());
+                question.setUpdateTime(LocalDateTime.now());
             }
-            
+
             questionService.saveBatch(questions);
+            //导入后排序
+            questionService.reorderDisplayOrder("judge");
             successCount += questions.size();
             questions.clear();
         }

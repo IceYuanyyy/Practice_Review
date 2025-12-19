@@ -13,6 +13,11 @@ import com.exam.entity.Question;
 public interface QuestionService extends IService<Question> {
 
     /**
+     * 重排指定类型的display_order
+     */
+    void reorderDisplayOrder(String type);
+
+    /**
      * 分页查询题目列表
      * 
      * @param page 当前页

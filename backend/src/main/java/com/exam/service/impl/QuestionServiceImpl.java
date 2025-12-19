@@ -36,7 +36,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     /**
      * 重排指定类型的display_order
      */
-    private void reorderDisplayOrder(String type) {
+    public void reorderDisplayOrder(String type) {
         jdbcTemplate.execute("SET @row_num = 0");
         jdbcTemplate.update(
             "UPDATE question SET display_order = (@row_num := @row_num + 1) WHERE type = ? ORDER BY display_order",
@@ -66,9 +66,8 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
             wrapper.eq("difficulty", difficulty);
         }
 
-        // 按创建时间倒序
-        wrapper.orderByDesc("create_time");
-        
+        // 按固定顺序排序
+        wrapper.orderByDesc("type", "display_order");
         System.out.println("SQL: " + wrapper.getTargetSql());
 
         Page<Question> result = this.page(pageParam, wrapper);
