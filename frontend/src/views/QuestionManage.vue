@@ -82,7 +82,7 @@
     <!-- 题目列表 -->
     <n-card :bordered="false">
       <n-data-table
-        :columns="columns"
+        remote :columns="columns"
         :data="questions"
         :loading="loading"
         :pagination="paginationReactive"
