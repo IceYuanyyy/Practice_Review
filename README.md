@@ -472,7 +472,7 @@ npm run preview
 ## 👨‍💻 作者
 
 - **开发者**: IceYuanyyy
-- **邮箱**: your-email@example.com
+- **邮箱**: 2478686497@qq.com / ercurym86@gmail.com
 - **GitHub**: [@IceYuanyyy](https://github.com/IceYuanyyy)
 
 ## ⭐ Star History
@@ -483,7 +483,7 @@ npm run preview
 
 如有问题或建议，欢迎通过以下方式联系：
 
-- 📧 Email: your-email@example.com
+- 📧 Email: 2478686497@qq.com / ercurym86@gmail.com
 - 💬 GitHub Issues: [提交Issue](https://github.com/IceYuanyyy/Practice_Review/issues)
 
 ---
