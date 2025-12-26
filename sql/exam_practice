@@ -53,3 +53,19 @@ CREATE TABLE `subject` (
   UNIQUE KEY `name` (`name`),
   KEY `idx_name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科目表';
+
+-- ==========================================
+-- 2. 重置现有数据：重新编号所有题目 (Migration Logic)
+-- ==========================================
+SET @row_num = 0;
+-- 显式指定排序规则，防止 Illegal mix of collations 错误
+SET @prev_subject = '' COLLATE utf8mb4_unicode_ci;
+SET @prev_type = '' COLLATE utf8mb4_unicode_ci;
+
+UPDATE question
+SET display_order = IF(@prev_subject != subject OR @prev_type != type,
+    @row_num := 1,
+    @row_num := @row_num + 1),
+    subject = @prev_subject := subject,
+    type = @prev_type := type
+ORDER BY subject, type, display_order;
