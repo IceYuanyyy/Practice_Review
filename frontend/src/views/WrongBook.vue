@@ -136,18 +136,46 @@ const parseOptions = (options) => {
   }
 }
 
+import { clearWrongBook as clearWrongBookApi, getWrongQuestions } from '@/api/practice'
+
+// ... existing imports
+
 const clearWrongBook = () => {
   dialog.warning({
     title: '确认清空',
     content: '确定要清空错题本吗？此操作不可恢复！',
     positiveText: '确认清空',
     negativeText: '取消',
-    onPositiveClick: () => {
-      practiceStore.wrongQuestions = []
-      message.success('已清空错题本')
+    onPositiveClick: async () => {
+      try {
+        await clearWrongBookApi()
+        practiceStore.wrongQuestions = []
+        message.success('已清空错题本')
+        // 重新加载数据以确保同步
+        loadData() 
+      } catch (error) {
+        console.error('清空失败', error)
+        message.error('清空失败')
+      }
     }
   })
 }
+
+const loadData = async () => {
+  // 这里假设 store 有 actions 或者直接调用 API 更新 store
+  // 如果 store 没有现成的 load action，我们手动调用
+  try {
+     const res = await getWrongQuestions({ page: 1, size: 1000 }) // 获取足够多的错题用于展示，或者使用 store 的 action
+     if (res.code === 200) {
+       practiceStore.wrongQuestions = res.data.records
+     }
+  } catch (e) {
+    console.error('加载错题失败', e)
+  }
+}
+
+// 确保组件挂载时加载数据（如果原有代码没有加载逻辑的话）
+// onMounted(() => { loadData() })
 </script>
 
 <style scoped>

@@ -8,6 +8,7 @@ import com.exam.entity.PracticeRecord;
 import com.exam.entity.Question;
 import com.exam.service.PracticeRecordService;
 import com.exam.service.QuestionService;
+import com.exam.dto.DashboardDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -148,40 +149,41 @@ public class PracticeController {
      * 
      * @return 统计信息
      */
+    /**
+     * 获取统计数据
+     * 
+     * @return 统计信息
+     */
     @GetMapping("/statistics")
-    public Result<Map<String, Object>> getStatistics() {
-        Map<String, Object> statistics = new HashMap<>();
+    public Result<DashboardDTO> getStatistics() {
+        DashboardDTO dto = new DashboardDTO();
         
         // 总题目数
         long totalQuestions = questionService.count();
-        statistics.put("totalQuestions", totalQuestions);
+        dto.setTotalQuestions(totalQuestions);
         
-        // 已练习题目数（练习次数 > 0）
-        QueryWrapper<Question> practicedWrapper = new QueryWrapper<>();
-        practicedWrapper.gt("practice_count", 0);
-        long practicedCount = questionService.count(practicedWrapper);
-        statistics.put("practicedCount", practicedCount);
+        // 已练习题目数（练习次数 > 0，即去重后的题目数）
+        // 修正：直接从练习记录表中查询去重后的题目ID数量，确保与清除操作同步
+        QueryWrapper<PracticeRecord> practicedWrapper = new QueryWrapper<>();
+        practicedWrapper.select("DISTINCT question_id");
+        // 注意：MyBatis-Plus的count方法可能会忽略select distinct，因此这里先查列表再计数，或者使用自定义SQL
+        // 为简单起见，且数据量预期不大，使用流处理。若数据量大建议优化为 Mapper XML 查询
+        List<Object> practicedQuestionIds = practiceRecordService.listObjs(practicedWrapper);
+        dto.setPracticedQuestionCount((long) practicedQuestionIds.size());
         
         // 总练习次数
         long totalPracticeCount = practiceRecordService.count();
-        statistics.put("totalPracticeCount", totalPracticeCount);
+        dto.setTotalPracticeCount(totalPracticeCount);
         
         // 正确次数
         QueryWrapper<PracticeRecord> correctWrapper = new QueryWrapper<>();
         correctWrapper.eq("is_correct", true);
         long correctCount = practiceRecordService.count(correctWrapper);
-        statistics.put("correctCount", correctCount);
-        
-        // 错误次数
-        QueryWrapper<PracticeRecord> wrongWrapper = new QueryWrapper<>();
-        wrongWrapper.eq("is_correct", false);
-        long wrongCount = practiceRecordService.count(wrongWrapper);
-        statistics.put("wrongCount", wrongCount);
         
         // 正确率
         double correctRate = totalPracticeCount > 0 ? 
                 (double) correctCount / totalPracticeCount * 100 : 0;
-        statistics.put("correctRate", String.format("%.2f", correctRate));
+        dto.setCorrectRate(String.format("%.0f", correctRate)); // 保持整数或根据需求保留小数，UI显示百分号
         
         // 错题数（有错误记录的题目数）
         QueryWrapper<PracticeRecord> wrongRecordWrapper = new QueryWrapper<>();
@@ -191,19 +193,24 @@ public class PracticeController {
                 .map(PracticeRecord::getQuestionId)
                 .distinct()
                 .count();
-        statistics.put("wrongQuestionCount", wrongQuestionCount);
+        dto.setWrongQuestionCount(wrongQuestionCount);
         
-        // 按科目统计
-        List<Question> allQuestions = questionService.list();
-        Map<String, Long> subjectStats = allQuestions.stream()
-                .collect(Collectors.groupingBy(Question::getSubject, Collectors.counting()));
-        statistics.put("subjectStats", subjectStats);
+        return Result.success(dto);
+    }
+    /**
+     * 清空错题本
+     * 
+     * @return 结果
+     */
+    @DeleteMapping("/wrong")
+    public Result<String> clearWrongQuestions() {
+        QueryWrapper<PracticeRecord> wrapper = new QueryWrapper<>();
+        wrapper.eq("is_correct", false);
+        boolean success = practiceRecordService.remove(wrapper);
         
-        // 按题型统计
-        Map<String, Long> typeStats = allQuestions.stream()
-                .collect(Collectors.groupingBy(Question::getType, Collectors.counting()));
-        statistics.put("typeStats", typeStats);
+        // 可选：同时重置题目表中的相关统计数据（如果需要更彻底的清理）
+        // 但根据需求，只需清空记录即可
         
-        return Result.success(statistics);
+        return success ? Result.success("已清空错题本") : Result.error("清空失败");
     }
 }

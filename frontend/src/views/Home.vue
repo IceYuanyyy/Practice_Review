@@ -130,9 +130,9 @@ const loadStatistics = async () => {
     const res = await getStatistics()
     if (res.code === 200) {
       statistics.value.totalQuestions = res.data.totalQuestions || 0
-      statistics.value.practiced = res.data.totalPracticeCount || 0
+      statistics.value.practiced = res.data.practicedQuestionCount || 0
       statistics.value.wrongCount = res.data.wrongQuestionCount || 0
-      statistics.value.correctRate = parseFloat(res.data.correctRate || 0)
+      statistics.value.correctRate = res.data.correctRate || 0
     }
   } catch (error) {
     console.error('加载统计数据失败:', error)

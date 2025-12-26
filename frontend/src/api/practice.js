@@ -32,3 +32,13 @@ export function getStatistics() {
   })
 }
 
+/**
+ * 清空错题本
+ */
+export function clearWrongBook() {
+  return request({
+    url: '/practice/wrong',
+    method: 'delete'
+  })
+}
+
