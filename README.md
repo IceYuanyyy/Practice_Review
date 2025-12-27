@@ -82,6 +82,30 @@
 
 </td>
   </tr>
+  <tr>
+    <td width="50%">
+
+### 🔐 用户认证
+- 📝 用户注册与登录
+- 🔒 Sa-Token 权限框架
+- 🎫 Token 身份认证
+- 👤 个人中心管理
+- 🔑 密码 BCrypt 加密
+- 🛡️ 用户数据隔离
+
+</td>
+    <td width="50%">
+
+### 🛡️ 管理员后台
+- 👥 用户管理（CRUD）
+- 📊 系统统计仪表盘
+- 📋 登录日志查询
+- 📝 操作日志查询
+- 🔒 基于角色的访问控制
+- ⚙️ 系统健康监控
+
+</td>
+  </tr>
 </table>
 
 ## 🏗️ 技术栈
@@ -92,6 +116,7 @@
 Spring Boot 2.7.18 │ Java应用框架
 MyBatis-Plus 3.5.5 │ 增强型ORM框架
 MySQL 8.0          │ 关系型数据库
+Sa-Token 1.37.0    │ 权限认证框架
 EasyExcel 3.3.2    │ Excel处理工具
 Lombok             │ Java代码简化工具
 Hutool 5.8.23      │ Java工具类库
@@ -106,6 +131,10 @@ Maven              │ 项目构建工具
 - 📝 自动代码生成
 - 🏷️ 科目表自动管理
 - 📊 题目统计自动更新
+- ⚡ 数据库索引优化
+- 🛡️ 文件上传安全校验
+- 🔐 Token 身份认证
+- 👥 用户数据隔离
 
 ### 前端技术
 
@@ -146,49 +175,18 @@ DEFAULT CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
 ```
 
-执行SQL建表脚本（位于 `backend/src/main/resources/sql/` 目录）：
+执行项目根目录下的 SQL 初始化脚本：`sql/exam_practice.sql`
 
-```sql
--- question表
-CREATE TABLE question (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
-    type VARCHAR(50) NOT NULL COMMENT '题型：single-choice(单选题)/multiple-choice(多选题)/judge(判断题)',
-    subject VARCHAR(100) NOT NULL DEFAULT '未分类' COMMENT '科目',
-    content TEXT NOT NULL COMMENT '题目内容',
-    options JSON COMMENT '选项（JSON数组）',
-    answer VARCHAR(200) NOT NULL COMMENT '答案',
-    analysis TEXT COMMENT '解析',
-    difficulty VARCHAR(20) DEFAULT 'medium' COMMENT '难度：easy/medium/hard',
-    is_marked TINYINT(1) DEFAULT 0 COMMENT '是否收藏',
-    practice_count INT DEFAULT 0 COMMENT '练习次数',
-    wrong_count INT DEFAULT 0 COMMENT '错误次数',
-    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    INDEX idx_type (type),
-    INDEX idx_subject (subject),
-    INDEX idx_difficulty (difficulty)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='题目表';
+**该脚本将自动创建以下数据表：**
+- `user`: 用户表（包含管理员和普通用户）
+- `question`: 题目表
+- `subject`: 科目表
+- `practice_record`: 练习记录表
+- `user_question_stats`: 用户刷题统计表
+- `user_login_log`: 登录日志表
+- `user_operation_log`: 操作日志表
 
--- practice_record表
-CREATE TABLE practice_record (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
-    question_id BIGINT NOT NULL COMMENT '题目ID',
-    user_answer VARCHAR(200) COMMENT '用户答案',
-    is_correct TINYINT(1) COMMENT '是否正确',
-    practice_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '练习时间',
-    FOREIGN KEY (question_id) REFERENCES question(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='练习记录表';
-
--- subject表（科目管理）
-CREATE TABLE subject (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
-    name VARCHAR(100) NOT NULL UNIQUE COMMENT '科目名称',
-    question_count INT DEFAULT 0 COMMENT '题目数量',
-    description VARCHAR(500) COMMENT '科目描述',
-    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科目表';
-```
+> ⚠️ **注意**: 脚本中包含初始管理员账号 `admin` / `admin123` 和部分测试数据。
 
 ### 2️⃣ 后端启动
 
@@ -248,16 +246,27 @@ npm run dev
 
 - **前端地址**: http://localhost:5173
 - **后端接口**: http://localhost:8081/api
+- **登录页面**: http://localhost:5173/login
+- **个人中心**: http://localhost:5173/profile
 - **题目管理**: http://localhost:5173/questions
 - **开始练习**: http://localhost:5173/practice
+- **管理后台**: http://localhost:5173/admin（需管理员权限）
+
+### 5️⃣ 默认账号
+
+| 角色 | 用户名 | 密码 | 说明 |
+|------|--------|------|------|
+| 管理员 | admin | admin123 | 拥有所有权限，可访问管理后台 |
+
+> 💡 **提示**: 首次使用请通过注册页面创建普通用户账号
 
 ## 📁 项目结构
 
 ```
 Final_Practice/
 ├── README.md                           # 项目说明文档
+├── API.md                              # API接口文档
 ├── 启动后端.bat                        # Windows后端启动脚本
-├── 习思想题库_20251219_134241.xlsx    # 示例题库数据
 ├── .gitignore                          # Git忽略配置
 │
 ├── backend/                            # 后端项目 ✅
@@ -267,39 +276,43 @@ Final_Practice/
 │   │   │   ├── java/com/exam/
 │   │   │   │   ├── ExamApplication.java          # 启动类
 │   │   │   │   ├── config/                       # 配置类
-│   │   │   │   │   ├── CorsConfig.java          # 跨域配置
-│   │   │   │   │   └── MybatisPlusConfig.java   # MyBatis-Plus配置
+│   │   │   │   │   ├── CorsConfig.java           # 跨域配置
+│   │   │   │   │   ├── MybatisPlusConfig.java    # MyBatis-Plus配置
+│   │   │   │   │   ├── SaTokenConfig.java        # Sa-Token配置
+│   │   │   │   │   ├── StpInterfaceImpl.java     # 权限接口实现
+│   │   │   │   │   └── GlobalExceptionHandler.java # 全局异常处理
 │   │   │   │   ├── controller/                   # 控制器层
-│   │   │   │   │   ├── QuestionController.java  # 题目管理API
-│   │   │   │   │   ├── PracticeController.java  # 练习功能API
-│   │   │   │   │   ├── ImportController.java    # 导入导出API
-│   │   │   │   │   └── TestController.java      # 测试API
+│   │   │   │   │   ├── AuthController.java       # 认证API(登录/注册/登出)
+│   │   │   │   │   ├── UserController.java       # 用户中心API
+│   │   │   │   │   ├── AdminController.java      # 管理员API
+│   │   │   │   │   ├── QuestionController.java   # 题目管理API
+│   │   │   │   │   ├── PracticeController.java   # 练习功能API
+│   │   │   │   │   ├── ImportController.java     # 导入导出API
+│   │   │   │   │   └── SubjectController.java    # 科目管理API
 │   │   │   │   ├── entity/                       # 实体类
-│   │   │   │   │   ├── Question.java            # 题目实体
-│   │   │   │   │   ├── PracticeRecord.java      # 练习记录实体
-│   │   │   │   │   └── Subject.java             # 科目实体
+│   │   │   │   │   ├── User.java                 # 用户实体
+│   │   │   │   │   ├── Question.java             # 题目实体
+│   │   │   │   │   ├── PracticeRecord.java       # 练习记录实体
+│   │   │   │   │   ├── Subject.java              # 科目实体
+│   │   │   │   │   ├── UserQuestionStats.java    # 用户题目统计
+│   │   │   │   │   ├── UserLoginLog.java         # 登录日志
+│   │   │   │   │   └── UserOperationLog.java     # 操作日志
 │   │   │   │   ├── mapper/                       # MyBatis Mapper
-│   │   │   │   │   ├── QuestionMapper.java
-│   │   │   │   │   ├── PracticeRecordMapper.java
-│   │   │   │   │   └── SubjectMapper.java
 │   │   │   │   ├── service/                      # 业务层
-│   │   │   │   │   ├── QuestionService.java
-│   │   │   │   │   ├── PracticeRecordService.java
+│   │   │   │   │   ├── UserService.java          # 用户服务
 │   │   │   │   │   └── impl/                     # 业务实现
 │   │   │   │   ├── dto/                          # 数据传输对象
-│   │   │   │   │   ├── QuestionImportDTO.java
-│   │   │   │   │   ├── JudgeQuestionImportDTO.java
-│   │   │   │   │   └── QuestionExportDTO.java
+│   │   │   │   │   ├── LoginDTO.java             # 登录请求
+│   │   │   │   │   ├── RegisterDTO.java          # 注册请求
+│   │   │   │   │   ├── UserVO.java               # 用户视图对象
+│   │   │   │   │   └── ...                       # 其他DTO
 │   │   │   │   ├── listener/                     # Excel监听器
-│   │   │   │   │   ├── ChoiceQuestionImportListener.java
-│   │   │   │   │   └── JudgeQuestionImportListener.java
 │   │   │   │   └── common/                       # 通用类
-│   │   │   │       ├── Result.java              # 统一返回结果
-│   │   │   │       └── PageResult.java          # 分页结果
+│   │   │   │       ├── Result.java               # 统一返回结果
+│   │   │   │       └── PageResult.java           # 分页结果
 │   │   │   └── resources/
 │   │   │       ├── application.yml               # 主配置文件
 │   │   │       ├── application-dev.yml           # 开发环境配置
-│   │   │       ├── logback-spring.xml            # 日志配置
 │   │   │       └── mapper/                       # MyBatis XML映射
 │   │   └── test/                                 # 测试目录
 │   └── target/                                   # 编译输出目录
@@ -312,49 +325,92 @@ Final_Practice/
         ├── main.js                     # 应用入口
         ├── App.vue                     # 根组件
         ├── api/                        # API接口
-        │   ├── request.js              # Axios封装
+        │   ├── request.js              # Axios封装(含Token拦截器)
+        │   ├── auth.js                 # 认证相关接口
+        │   ├── user.js                 # 用户相关接口
+        │   ├── admin.js                # 管理员相关接口
         │   ├── question.js             # 题目相关接口
         │   └── practice.js             # 练习相关接口
         ├── router/                     # 路由配置
-        │   └── index.js                # 路由定义
+        │   └── index.js                # 路由定义(含守卫)
         ├── stores/                     # Pinia状态管理
+        │   ├── user.js                 # 用户状态
         │   └── practice.js             # 练习状态
         ├── views/                      # 页面组件
-        │   ├── Layout.vue              # 布局组件
+        │   ├── Layout.vue              # 用户端布局
         │   ├── Home.vue                # 首页
+        │   ├── Login.vue               # 登录页
+        │   ├── Register.vue            # 注册页
+        │   ├── Profile.vue             # 个人中心
         │   ├── QuestionManage.vue      # 题目管理页
-        │   ├── QuestionConverter.vue   # 题目转换工具
         │   ├── Practice.vue            # 练习页面
         │   ├── WrongBook.vue           # 错题本
-        │   └── Statistics.vue          # 统计分析
+        │   ├── Statistics.vue          # 统计分析
+        │   └── admin/                  # 管理后台
+        │       ├── AdminLayout.vue     # 后台布局
+        │       ├── Dashboard.vue       # 仪表盘
+        │       ├── UserManage.vue      # 用户管理
+        │       ├── LoginLogs.vue       # 登录日志
+        │       └── OperationLogs.vue   # 操作日志
         ├── components/                 # 公共组件
         └── assets/                     # 静态资源
 ```
 
 ## 📡 API 接口
 
-### 题目管理接口
+> 完整的 API 文档请参阅 [API.md](API.md)
+
+### 🔐 认证接口
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
-| `/api/questions` | GET | 分页查询题目列表（支持subject/type/difficulty筛选） |
+| `/api/auth/login` | POST | 用户登录 |
+| `/api/auth/register` | POST | 用户注册 |
+| `/api/auth/logout` | POST | 用户登出 |
+| `/api/auth/user` | GET | 获取当前用户信息 |
+| `/api/auth/check` | GET | 检查登录状态 |
+
+### 👤 用户中心接口
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/user/profile` | GET | 获取个人资料 |
+| `/api/user/profile` | PUT | 更新个人资料 |
+| `/api/user/password` | PUT | 修改密码 |
+
+### 🛡️ 管理员接口（需 admin 角色）
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/admin/statistics` | GET | 系统统计数据 |
+| `/api/admin/users` | GET | 用户列表（分页） |
+| `/api/admin/users/{id}` | GET | 用户详情 |
+| `/api/admin/users/{id}/status` | PUT | 修改用户状态 |
+| `/api/admin/users/{id}/reset-password` | PUT | 重置用户密码 |
+| `/api/admin/users/{id}` | DELETE | 删除用户 |
+| `/api/admin/login-logs` | GET | 登录日志（分页） |
+| `/api/admin/operation-logs` | GET | 操作日志（分页） |
+
+### 📝 题目管理接口
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/questions` | GET | 分页查询题目列表 |
 | `/api/questions/{id}` | GET | 获取题目详情 |
 | `/api/questions` | POST | 新增题目 |
 | `/api/questions/{id}` | PUT | 更新题目 |
-| `/api/questions/{id}` | DELETE | 删除题目（自动更新科目统计） |
+| `/api/questions/{id}` | DELETE | 删除题目 |
 | `/api/questions/batch` | DELETE | 批量删除题目 |
-| `/api/questions/clear` | POST | 清空题库（支持按科目/题型筛选） |
 | `/api/questions/random` | GET | 随机获取题目 |
 
-### 科目管理接口
+### 📂 科目管理接口
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
 | `/api/subjects` | GET | 获取所有科目列表 |
-| `/api/subjects/recount` | POST | 重新统计所有科目题目数量 |
-| `/api/subjects/{subject}/recount` | POST | 重新统计指定科目题目数量 |
+| `/api/subjects/recount` | POST | 重新统计科目题目数量 |
 
-### 练习功能接口
+### 🎯 练习功能接口
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
@@ -363,11 +419,11 @@ Final_Practice/
 | `/api/practice/statistics` | GET | 获取练习统计 |
 | `/api/practice/records` | GET | 获取练习记录 |
 
-### 导入导出接口
+### 📥 导入导出接口
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
-| `/api/import/excel` | POST | 导入Excel题目（支持自定义科目参数） |
+| `/api/import/excel` | POST | 导入Excel题目 |
 | `/api/import/template/choice` | GET | 下载选择题模板 |
 | `/api/import/template/judge` | GET | 下载判断题模板 |
 | `/api/export` | POST | 导出题目 |

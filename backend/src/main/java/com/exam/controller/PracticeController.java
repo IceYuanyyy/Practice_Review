@@ -1,5 +1,6 @@
 package com.exam.controller;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.exam.common.PageResult;
@@ -8,6 +9,7 @@ import com.exam.entity.PracticeRecord;
 import com.exam.entity.Question;
 import com.exam.service.PracticeRecordService;
 import com.exam.service.QuestionService;
+import com.exam.service.UserQuestionStatsService;
 import com.exam.dto.DashboardDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -19,9 +21,11 @@ import java.util.stream.Collectors;
 
 /**
  * 练习 Controller
+ * 已修改为多用户模式：所有数据按当前登录用户隔离
  * 
  * @author Exam System
  * @since 2025-12-19
+ * @modified 2025-12-27 添加用户隔离
  */
 @RestController
 @RequestMapping("/api/practice")
@@ -33,6 +37,16 @@ public class PracticeController {
     @Autowired
     private PracticeRecordService practiceRecordService;
 
+    @Autowired
+    private UserQuestionStatsService userQuestionStatsService;
+
+    /**
+     * 获取当前登录用户ID
+     */
+    private Long getCurrentUserId() {
+        return StpUtil.getLoginIdAsLong();
+    }
+
     /**
      * 提交答题记录
      * 
@@ -41,6 +55,8 @@ public class PracticeController {
      */
     @PostMapping("/submit")
     public Result<Map<String, Object>> submitAnswer(@RequestBody PracticeRecord record) {
+        Long userId = getCurrentUserId();
+        
         // 获取题目
         Question question = questionService.getById(record.getQuestionId());
         if (question == null) {
@@ -66,16 +82,14 @@ public class PracticeController {
         }
         
         record.setIsCorrect(isCorrect);
+        // 设置用户ID（数据隔离关键）
+        record.setUserId(userId);
 
         // 保存练习记录
         practiceRecordService.save(record);
 
-        // 更新题目统计
-        question.setPracticeCount(question.getPracticeCount() + 1);
-        if (!isCorrect) {
-            question.setWrongCount(question.getWrongCount() + 1);
-        }
-        questionService.updateById(question);
+        // 更新用户题目统计（替代原来的全局统计）
+        userQuestionStatsService.updatePracticeStats(userId, record.getQuestionId(), isCorrect);
 
         // 返回结果
         Map<String, Object> resultMap = new HashMap<>();
@@ -88,7 +102,7 @@ public class PracticeController {
     }
 
     /**
-     * 获取错题列表（分页）
+     * 获取错题列表（分页）- 按当前用户过滤
      * 
      * @param page 页码
      * @param size 每页大小
@@ -103,26 +117,19 @@ public class PracticeController {
             @RequestParam(required = false) String subject,
             @RequestParam(required = false) String type) {
         
-        // 查询做错的题目ID列表
-        QueryWrapper<PracticeRecord> recordWrapper = new QueryWrapper<>();
-        recordWrapper.eq("is_correct", false)
-                .select("DISTINCT question_id");
-        List<PracticeRecord> wrongRecords = practiceRecordService.list(recordWrapper);
+        Long userId = getCurrentUserId();
         
-        if (wrongRecords.isEmpty()) {
+        // 从用户题目统计表获取错题ID列表
+        List<Long> wrongQuestionIds = userQuestionStatsService.getWrongQuestionIds(userId);
+        
+        if (wrongQuestionIds.isEmpty()) {
             return Result.success(new PageResult<>(null, 0L, (long) page, (long) size));
         }
-        
-        // 提取题目ID列表
-        List<Long> questionIds = wrongRecords.stream()
-                .map(PracticeRecord::getQuestionId)
-                .distinct()
-                .collect(Collectors.toList());
         
         // 分页查询错题
         Page<Question> questionPage = new Page<>(page, size);
         QueryWrapper<Question> wrapper = new QueryWrapper<>();
-        wrapper.in("id", questionIds);
+        wrapper.in("id", wrongQuestionIds);
         
         if (subject != null && !subject.isEmpty()) {
             wrapper.eq("subject", subject);
@@ -131,8 +138,18 @@ public class PracticeController {
             wrapper.eq("type", type);
         }
         
-        wrapper.orderByDesc("wrong_count");
+        // 按用户统计表的错误次数排序（这里简化处理，实际可以 join 查询）
+        wrapper.orderByDesc("id");
         questionService.page(questionPage, wrapper);
+        
+        // 为每道题设置当前用户的错误次数（用于前端显示）
+        for (Question q : questionPage.getRecords()) {
+            int wrongCount = userQuestionStatsService.getWrongCount(userId, q.getId());
+            q.setWrongCount(wrongCount);
+            // 设置收藏状态
+            boolean isMarked = userQuestionStatsService.isMarked(userId, q.getId());
+            q.setIsMarked(isMarked);
+        }
         
         PageResult<Question> pageResult = new PageResult<>(
                 questionPage.getRecords(),
@@ -145,72 +162,135 @@ public class PracticeController {
     }
 
     /**
-     * 获取统计数据
-     * 
-     * @return 统计信息
-     */
-    /**
-     * 获取统计数据
+     * 获取统计数据 - 按当前用户统计
      * 
      * @return 统计信息
      */
     @GetMapping("/statistics")
     public Result<DashboardDTO> getStatistics() {
+        Long userId = getCurrentUserId();
         DashboardDTO dto = new DashboardDTO();
         
-        // 总题目数
-        long totalQuestions = questionService.count();
+        // 总题目数（用户可见的题目：自己的 + 公共题库）
+        QueryWrapper<Question> questionWrapper = new QueryWrapper<>();
+        questionWrapper.isNull("owner_id").or().eq("owner_id", userId);
+        long totalQuestions = questionService.count(questionWrapper);
         dto.setTotalQuestions(totalQuestions);
         
-        // 已练习题目数（练习次数 > 0，即去重后的题目数）
-        // 修正：直接从练习记录表中查询去重后的题目ID数量，确保与清除操作同步
+        // 已练习题目数（当前用户练习过的）
         QueryWrapper<PracticeRecord> practicedWrapper = new QueryWrapper<>();
-        practicedWrapper.select("DISTINCT question_id");
-        // 注意：MyBatis-Plus的count方法可能会忽略select distinct，因此这里先查列表再计数，或者使用自定义SQL
-        // 为简单起见，且数据量预期不大，使用流处理。若数据量大建议优化为 Mapper XML 查询
+        practicedWrapper.eq("user_id", userId)
+                       .select("DISTINCT question_id");
         List<Object> practicedQuestionIds = practiceRecordService.listObjs(practicedWrapper);
         dto.setPracticedQuestionCount((long) practicedQuestionIds.size());
         
-        // 总练习次数
-        long totalPracticeCount = practiceRecordService.count();
+        // 总练习次数（当前用户）
+        QueryWrapper<PracticeRecord> countWrapper = new QueryWrapper<>();
+        countWrapper.eq("user_id", userId);
+        long totalPracticeCount = practiceRecordService.count(countWrapper);
         dto.setTotalPracticeCount(totalPracticeCount);
         
-        // 正确次数
+        // 正确次数（当前用户）
         QueryWrapper<PracticeRecord> correctWrapper = new QueryWrapper<>();
-        correctWrapper.eq("is_correct", true);
+        correctWrapper.eq("user_id", userId).eq("is_correct", true);
         long correctCount = practiceRecordService.count(correctWrapper);
         
         // 正确率
         double correctRate = totalPracticeCount > 0 ? 
                 (double) correctCount / totalPracticeCount * 100 : 0;
-        dto.setCorrectRate(String.format("%.0f", correctRate)); // 保持整数或根据需求保留小数，UI显示百分号
+        dto.setCorrectRate(String.format("%.0f", correctRate));
         
-        // 错题数（有错误记录的题目数）
-        QueryWrapper<PracticeRecord> wrongRecordWrapper = new QueryWrapper<>();
-        wrongRecordWrapper.eq("is_correct", false)
-                .select("DISTINCT question_id");
-        long wrongQuestionCount = practiceRecordService.list(wrongRecordWrapper).stream()
-                .map(PracticeRecord::getQuestionId)
-                .distinct()
-                .count();
-        dto.setWrongQuestionCount(wrongQuestionCount);
+        // 错题数（当前用户）
+        List<Long> wrongIds = userQuestionStatsService.getWrongQuestionIds(userId);
+        dto.setWrongQuestionCount((long) wrongIds.size());
         
         return Result.success(dto);
     }
+
     /**
-     * 清空错题本
+     * 清空错题本 - 仅清空当前用户的
      * 
      * @return 结果
      */
     @DeleteMapping("/wrong")
     public Result<String> clearWrongQuestions() {
+        Long userId = getCurrentUserId();
+        
+        // 清除用户题目统计表中的错题记录
+        userQuestionStatsService.clearAllWrongRecords(userId);
+        
+        // 可选：同时删除练习记录中的错误记录
         QueryWrapper<PracticeRecord> wrapper = new QueryWrapper<>();
-        wrapper.eq("is_correct", false);
-        boolean success = practiceRecordService.remove(wrapper);
+        wrapper.eq("user_id", userId).eq("is_correct", false);
+        practiceRecordService.remove(wrapper);
         
-        // 可选：同时重置题目表中的相关统计数据（如果需要更彻底的清理）
-        // 但根据需求，只需清空记录即可
+        return Result.success("已清空错题本");
+    }
+
+    /**
+     * 切换题目收藏状态
+     * 
+     * @param questionId 题目ID
+     * @return 新的收藏状态
+     */
+    @PostMapping("/mark/{questionId}")
+    public Result<Map<String, Object>> toggleMark(@PathVariable Long questionId) {
+        Long userId = getCurrentUserId();
         
-        return success ? Result.success("已清空错题本") : Result.error("清空失败");
+        // 验证题目存在
+        Question question = questionService.getById(questionId);
+        if (question == null) {
+            return Result.error("题目不存在");
+        }
+        
+        boolean newMarkStatus = userQuestionStatsService.toggleMark(userId, questionId);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("isMarked", newMarkStatus);
+        result.put("questionId", questionId);
+        
+        return Result.success(result);
+    }
+
+    /**
+     * 获取收藏的题目列表
+     * 
+     * @param page 页码
+     * @param size 每页大小
+     * @return 收藏题目分页数据
+     */
+    @GetMapping("/marked")
+    public Result<PageResult<Question>> getMarkedQuestions(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        
+        Long userId = getCurrentUserId();
+        
+        // 获取收藏的题目ID列表
+        List<Long> markedIds = userQuestionStatsService.getMarkedQuestionIds(userId);
+        
+        if (markedIds.isEmpty()) {
+            return Result.success(new PageResult<>(null, 0L, (long) page, (long) size));
+        }
+        
+        // 分页查询
+        Page<Question> questionPage = new Page<>(page, size);
+        QueryWrapper<Question> wrapper = new QueryWrapper<>();
+        wrapper.in("id", markedIds);
+        questionService.page(questionPage, wrapper);
+        
+        // 设置收藏状态
+        for (Question q : questionPage.getRecords()) {
+            q.setIsMarked(true);
+        }
+        
+        PageResult<Question> pageResult = new PageResult<>(
+                questionPage.getRecords(),
+                questionPage.getTotal(),
+                questionPage.getCurrent(),
+                questionPage.getSize()
+        );
+        
+        return Result.success(pageResult);
     }
 }

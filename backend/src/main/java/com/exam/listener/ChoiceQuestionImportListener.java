@@ -29,19 +29,25 @@ public class ChoiceQuestionImportListener extends AnalysisEventListener<Question
     private QuestionService questionService;
     private SubjectService subjectService;
     private String customSubject; // 自定义科目名称
+    private Long userId; // 导入用户ID
     private int successCount = 0;
     private int failCount = 0;
     // 统计每个科目导入的题目数量
     private Map<String, Integer> subjectCountMap = new HashMap<>();
 
     public ChoiceQuestionImportListener(QuestionService questionService, SubjectService subjectService) {
-        this(questionService, subjectService, null);
+        this(questionService, subjectService, null, null);
     }
 
     public ChoiceQuestionImportListener(QuestionService questionService, SubjectService subjectService, String customSubject) {
+        this(questionService, subjectService, customSubject, null);
+    }
+
+    public ChoiceQuestionImportListener(QuestionService questionService, SubjectService subjectService, String customSubject, Long userId) {
         this.questionService = questionService;
         this.subjectService = subjectService;
         this.customSubject = customSubject;
+        this.userId = userId;
     }
 
     @Override
@@ -104,8 +110,15 @@ public class ChoiceQuestionImportListener extends AnalysisEventListener<Question
         question.setId(null);
         
         // 根据答案长度自动判断题型
-        String answer = dto.getAnswer() != null ? dto.getAnswer().toUpperCase() : "";
-        if (answer.length() > 1) {
+        String answer = dto.getAnswer() != null ? dto.getAnswer().toUpperCase().trim() : "";
+        boolean isMultiple = answer.length() > 1;
+        
+        // 增强判断：如果题目内容包含(多选)标识，强制设为多选题
+        if (dto.getContent() != null && (dto.getContent().contains("多选") || dto.getContent().contains("多项"))) {
+            isMultiple = true;
+        }
+
+        if (isMultiple) {
             question.setType("multiple-choice");  // 多选题（答案如：ABC）
         } else {
             question.setType("single-choice");     // 单选题（答案如：A）
@@ -127,6 +140,9 @@ public class ChoiceQuestionImportListener extends AnalysisEventListener<Question
         if (dto.getOptionD() != null && !dto.getOptionD().trim().isEmpty()) {
             optionsList.add("D:" + dto.getOptionD());
         }
+        if (dto.getOptionE() != null && !dto.getOptionE().trim().isEmpty()) {
+            optionsList.add("E:" + dto.getOptionE());
+        }
         question.setOptions(optionsList);
         
         question.setAnswer(dto.getAnswer() != null ? dto.getAnswer().toUpperCase() : "");
@@ -143,6 +159,9 @@ public class ChoiceQuestionImportListener extends AnalysisEventListener<Question
         question.setIsMarked(false);
         question.setWrongCount(0);
         question.setPracticeCount(0);
+        
+        // 设置题目所属用户
+        question.setOwnerId(userId);
 
         return question;
     }

@@ -21,6 +21,11 @@ public class PracticeRecord {
     private Long id;
 
     /**
+     * 用户ID（练习记录所属用户）
+     */
+    private Long userId;
+
+    /**
      * 题目ID
      */
     private Long questionId;

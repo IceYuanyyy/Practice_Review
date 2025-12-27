@@ -22,6 +22,11 @@ public class Question {
     private Long id;
 
     /**
+     * 题目所属用户ID（NULL表示公共题库）
+     */
+    private Long ownerId;
+
+    /**
      * 题型：single-choice(单选题)/multiple-choice(多选题)/judge(判断题)
      */
     private String type;

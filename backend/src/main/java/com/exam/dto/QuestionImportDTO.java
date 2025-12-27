@@ -27,6 +27,9 @@ public class QuestionImportDTO {
     @ExcelProperty("选项D")
     private String optionD;
 
+    @ExcelProperty("选项E")
+    private String optionE;
+
     @ExcelProperty("答案")
     private String answer;
 

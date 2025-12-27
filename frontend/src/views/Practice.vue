@@ -1,168 +1,241 @@
 <template>
   <div class="practice-container">
-    <transition name="fade" mode="out-in">
-      <div v-if="!currentQuestion" class="filter-panel">
-        <n-card title="练习配置" :bordered="false" size="huge" class="config-card">
-          <n-form :label-width="80" size="large">
-            <n-grid :cols="1" :y-gap="24">
-              <n-grid-item>
-                <n-form-item label="选择科目">
-                  <n-select v-model:value="filters.subject" :options="subjectOptions" placeholder="全部科目" />
-                </n-form-item>
-              </n-grid-item>
-              <n-grid-item>
-                <n-form-item label="题目类型">
-                  <n-select v-model:value="filters.type" :options="typeOptions" placeholder="混合题型" />
-                </n-form-item>
-              </n-grid-item>
-              <n-grid-item>
-                <n-button type="primary" block size="large" @click="startPractice" class="start-btn">
-                  开始专注练习
-                </n-button>
-              </n-grid-item>
-            </n-grid>
-          </n-form>
-        </n-card>
+    <!-- Background Doodles Layer -->
+    <div class="doodles-layer">
+      <div 
+        v-for="(doodle, index) in doodles" 
+        :key="index"
+        class="doodle-item"
+        :style="doodle.style"
+      >
+        <svg 
+          viewBox="0 0 100 100" 
+          fill="none" 
+          stroke="currentColor" 
+          stroke-width="2" 
+          stroke-linecap="round" 
+          stroke-linejoin="round"
+          :style="{ opacity: doodle.opacity }"
+        >
+          <path :d="doodle.path" />
+        </svg>
       </div>
+    </div>
 
-      <div v-else class="question-panel">
-        <div class="question-header">
-          <div class="header-left">
-            <n-tag :type="getTypeColor()" size="small" round>
-              {{ getTypeLabel() }}
-            </n-tag>
-            <span class="subject-text">{{ currentQuestion.subject }}</span>
+    <!-- Main Content Wrapper -->
+    <div class="content-wrapper">
+      <transition name="fade" mode="out-in">
+        <div v-if="!currentQuestion" class="filter-panel">
+          <n-card :bordered="false" size="huge" class="config-card glass">
+            <div class="config-header">
+              <h2 class="config-title">开始专注练习</h2>
+              <p class="config-subtitle">选择科目与题型，进入沉浸式刷题模式</p>
+            </div>
+            
+            <n-form :label-width="80" size="large" class="config-form">
+              <n-grid :cols="1" :y-gap="24">
+                <n-grid-item>
+                  <div class="form-label">选择科目</div>
+                  <n-select 
+                    v-model:value="filters.subject" 
+                    :options="subjectOptions" 
+                    placeholder="全部科目" 
+                    class="premium-select"
+                  />
+                </n-grid-item>
+                <n-grid-item>
+                  <div class="form-label">题目类型</div>
+                  <n-select 
+                    v-model:value="filters.type" 
+                    :options="typeOptions" 
+                    placeholder="混合题型" 
+                    class="premium-select"
+                  />
+                </n-grid-item>
+                <n-grid-item>
+                  <n-button type="primary" block size="large" @click="startPractice" class="start-btn">
+                    <template #icon>
+                      <n-icon :component="SchoolOutline" />
+                    </template>
+                    进入模式
+                  </n-button>
+                </n-grid-item>
+              </n-grid>
+            </n-form>
+          </n-card>
+        </div>
+  
+        <div v-else class="question-wrapper">
+          <!-- Progress Header -->
+          <div class="focus-header">
+            <div class="progress-info">
+              <span class="progress-label">当前进度</span>
+               <n-progress 
+                type="line" 
+                :percentage="(practiceStore.totalPracticeCount % 20) * 5" 
+                :indicator-placement="'inside'" 
+                color="#10b981"
+                rail-color="rgba(255,255,255,0.3)"
+                class="progress-bar"
+              />
+              <span class="progress-text">第 {{ practiceStore.totalPracticeCount + 1 }} 题</span>
+            </div>
+            <n-button quaternary circle class="close-btn" @click="exitPractice">
+               <n-icon :component="CloseOutline" size="24" />
+            </n-button>
           </div>
-          <div class="header-right">
-             <n-text depth="3">累计练习 {{ practiceStore.totalPracticeCount + 1 }} 题</n-text>
-             <n-button quaternary circle size="small" @click="exitPractice">
-               <template #icon><n-icon :component="CloseOutline" /></template>
-             </n-button>
-          </div>
-        </div>
-
-        <div class="question-content">
-          {{ currentQuestion.content }}
-        </div>
-
-        <div class="options-list">
-          <!-- 单选题：圆形选项卡片 -->
-          <template v-if="(currentQuestion.type === 'single-choice' || currentQuestion.type === 'choice') && options.length > 0">
-            <div 
-              v-for="option in options" 
-              :key="option.key"
-              class="option-item"
-              :class="{ 
-                'selected': userAnswer === option.key,
-                'disabled': practiceStore.showAnalysis,
-                'correct-highlight': practiceStore.showAnalysis && option.key === currentQuestion.answer,
-                'error-highlight': practiceStore.showAnalysis && userAnswer === option.key && userAnswer !== currentQuestion.answer
-              }"
-              @click="handleSelectOption(option.key)"
-            >
-              <div class="option-key">{{ option.key }}</div>
-              <div class="option-text">{{ option.text }}</div>
-              <div v-if="practiceStore.showAnalysis && option.key === currentQuestion.answer" class="result-icon">
-                <n-icon :component="CheckmarkCircle" color="#18a058" size="24"/>
-              </div>
-               <div v-if="practiceStore.showAnalysis && userAnswer === option.key && userAnswer !== currentQuestion.answer" class="result-icon">
-                <n-icon :component="CloseCircle" color="#d03050" size="24"/>
-              </div>
-            </div>
-          </template>
-
-          <!-- 多选题：方形复选框卡片 -->
-          <template v-if="currentQuestion.type === 'multiple-choice' && options.length > 0">
-            <div 
-              v-for="option in options" 
-              :key="option.key"
-              class="option-item checkbox-item"
-              :class="{ 
-                'selected': isOptionSelected(option.key),
-                'disabled': practiceStore.showAnalysis,
-                'correct-highlight': practiceStore.showAnalysis && isInCorrectAnswer(option.key),
-                'error-highlight': practiceStore.showAnalysis && isOptionSelected(option.key) && !isInCorrectAnswer(option.key)
-              }"
-              @click="toggleMultipleOption(option.key)"
-            >
-              <div class="option-checkbox" :class="{ checked: isOptionSelected(option.key) }">
-                <n-icon v-if="isOptionSelected(option.key)" :component="CheckmarkOutline" />
-              </div>
-              <div class="option-text">{{ option.text }}</div>
-              <div v-if="practiceStore.showAnalysis && isInCorrectAnswer(option.key)" class="result-icon">
-                <n-icon :component="CheckmarkCircle" color="#18a058" size="24"/>
-              </div>
-            </div>
-          </template>
-
-          <!-- 判断题 -->
-          <template v-if="currentQuestion.type === 'judge'">
-            <div 
-              v-for="val in ['正确', '错误']" 
-              :key="val"
-              class="option-item"
-              :class="{ 
-                'selected': userAnswer === val,
-                'disabled': practiceStore.showAnalysis,
-                'correct-highlight': practiceStore.showAnalysis && val === currentQuestion.answer,
-                'error-highlight': practiceStore.showAnalysis && userAnswer === val && userAnswer !== currentQuestion.answer
-              }"
-              @click="handleSelectOption(val)"
-            >
-              <div class="option-text center-text">{{ val }}</div>
-              <div v-if="practiceStore.showAnalysis && val === displayAnswer" class="result-icon">
-                <n-icon :component="CheckmarkCircle" color="#18a058" size="24"/>
-              </div>
-               <div v-if="practiceStore.showAnalysis && userAnswer === val && !isCorrect" class="result-icon">
-                <n-icon :component="CloseCircle" color="#d03050" size="24"/>
-              </div>
-            </div>
-          </template>
-        </div>
-
-        <div class="action-bar">
-          <n-button 
-            v-if="!practiceStore.showAnalysis" 
-            type="primary" 
-            round 
-            size="large" 
-            class="action-btn"
-            :disabled="!userAnswer"
-            @click="submitAnswer"
-          >
-            提交答案
-          </n-button>
-          <n-button 
-            v-else 
-            type="primary" 
-            round 
-            size="large" 
-            class="action-btn"
-            @click="nextQuestion"
-          >
-            下一题 (Enter)
-          </n-button>
-        </div>
-
-        <transition name="slide-up">
-          <div v-if="practiceStore.showAnalysis" class="analysis-box">
-             <div class="analysis-header">
-                <span class="label">答案解析</span>
-                <n-tag :type="isCorrect ? 'success' : 'error'" size="small">
-                  {{ isCorrect ? '回答正确' : '回答错误' }}
+  
+          <div class="question-panel paper-effect">
+            <div class="question-header">
+              <div class="header-left">
+                <n-tag :type="getTypeColor()" size="small" round class="type-tag">
+                  {{ getTypeLabel() }}
                 </n-tag>
-             </div>
-             <div class="analysis-content">
-               <p><strong>正确答案：</strong>{{ displayAnswer }}</p>
-               <p v-if="currentQuestion.analysis" class="analysis-detail">
-                 {{ currentQuestion.analysis }}
-               </p>
-               <p v-else class="text-gray">暂无详细解析</p>
-             </div>
+                <span class="subject-text">{{ currentQuestion.subject }}</span>
+              </div>
+              <!-- Decorative dots -->
+              <div class="paper-holes"></div>
+            </div>
+  
+            <div class="question-content">
+              {{ currentQuestion.content }}
+            </div>
+  
+            <div class="options-list">
+              <!-- 单选题 -->
+              <template v-if="(currentQuestion.type === 'single-choice' || currentQuestion.type === 'choice') && options.length > 0">
+                <div 
+                  v-for="option in options" 
+                  :key="option.key"
+                  class="option-item"
+                  :class="{ 
+                    'selected': userAnswer === option.key,
+                    'disabled': practiceStore.showAnalysis,
+                    'correct-highlight': practiceStore.showAnalysis && option.key === currentQuestion.answer,
+                    'error-highlight': practiceStore.showAnalysis && userAnswer === option.key && userAnswer !== currentQuestion.answer
+                  }"
+                  @click="handleSelectOption(option.key)"
+                >
+                  <div class="option-key">{{ option.key }}</div>
+                  <div class="option-text">{{ option.text }}</div>
+                  <div v-if="practiceStore.showAnalysis && option.key === currentQuestion.answer" class="result-icon">
+                    <n-icon :component="CheckmarkCircle" color="#10b981" size="24"/>
+                  </div>
+                   <div v-if="practiceStore.showAnalysis && userAnswer === option.key && userAnswer !== currentQuestion.answer" class="result-icon">
+                    <n-icon :component="CloseCircle" color="#ef4444" size="24"/>
+                  </div>
+                </div>
+              </template>
+  
+              <!-- 多选题 -->
+              <template v-if="currentQuestion.type === 'multiple-choice' && options.length > 0">
+                <div 
+                  v-for="option in options" 
+                  :key="option.key"
+                  class="option-item checkbox-item"
+                  :class="{ 
+                    'selected': isOptionSelected(option.key),
+                    'disabled': practiceStore.showAnalysis,
+                    'correct-highlight': practiceStore.showAnalysis && isInCorrectAnswer(option.key),
+                    'error-highlight': practiceStore.showAnalysis && isOptionSelected(option.key) && !isInCorrectAnswer(option.key)
+                  }"
+                  @click="toggleMultipleOption(option.key)"
+                >
+                  <div class="option-checkbox" :class="{ checked: isOptionSelected(option.key) }">
+                    <n-icon v-if="isOptionSelected(option.key)" :component="CheckmarkOutline" />
+                  </div>
+                  <div class="option-text">{{ option.text }}</div>
+                  <div v-if="practiceStore.showAnalysis && isInCorrectAnswer(option.key)" class="result-icon">
+                    <n-icon :component="CheckmarkCircle" color="#10b981" size="24"/>
+                  </div>
+                </div>
+              </template>
+  
+              <!-- 判断题 -->
+              <template v-if="currentQuestion.type === 'judge'">
+                <div 
+                  v-for="val in ['正确', '错误']" 
+                  :key="val"
+                  class="option-item"
+                  :class="{ 
+                    'selected': userAnswer === val,
+                    'disabled': practiceStore.showAnalysis,
+                    'correct-highlight': practiceStore.showAnalysis && val === currentQuestion.answer,
+                    'error-highlight': practiceStore.showAnalysis && userAnswer === val && userAnswer !== currentQuestion.answer
+                  }"
+                  @click="handleSelectOption(val)"
+                >
+                  <div class="option-text center-text">{{ val }}</div>
+                  <div v-if="practiceStore.showAnalysis && val === displayAnswer" class="result-icon">
+                    <n-icon :component="CheckmarkCircle" color="#10b981" size="24"/>
+                  </div>
+                   <div v-if="practiceStore.showAnalysis && userAnswer === val && !isCorrect" class="result-icon">
+                    <n-icon :component="CloseCircle" color="#ef4444" size="24"/>
+                  </div>
+                </div>
+              </template>
+            </div>
+  
+            <div class="action-bar">
+              <!-- Decorative Arrow Left (Visual Balance) -->
+              <svg class="decor-arrow-prev" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#2c3e50" style="left: -80px;">
+                 <path d="M50 20 C 35 15, 15 15, 5 20 M 5 20 L 15 10 M 5 20 L 15 30" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+  
+              <n-button 
+                v-if="!practiceStore.showAnalysis" 
+                type="primary" 
+                round 
+                size="large" 
+                class="action-btn"
+                :disabled="!userAnswer"
+                @click="submitAnswer"
+              >
+                提交答案
+              </n-button>
+              <n-button 
+                v-else 
+                type="primary" 
+                round 
+                size="large" 
+                class="action-btn"
+                @click="nextQuestion"
+              >
+                下一题 (Enter)
+              </n-button>
+              
+              <!-- Decorative Arrow Right -->
+              <svg class="decor-arrow-next" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#2c3e50" style="right: -80px;">
+                 <path d="M10 20 C 25 25, 45 25, 55 20 M 55 20 L 45 10 M 55 20 L 45 30" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+  
+            <transition name="slide-up">
+              <div v-if="practiceStore.showAnalysis" class="analysis-box">
+                 <div class="analysis-header">
+                    <div class="analysis-title">
+                       <n-icon :component="BookOutline" class="analysis-icon"/>
+                       <span>知识点讲解</span>
+                    </div>
+                    <n-tag :type="isCorrect ? 'success' : 'error'" size="small" round>
+                      {{ isCorrect ? '🎉 回答正确' : '🤔 回答错误' }}
+                    </n-tag>
+                 </div>
+                 <div class="analysis-content">
+                   <div class="correct-answer-row">
+                     <span class="label">正确答案：</span>
+                     <span class="value">{{ displayAnswer }}</span>
+                   </div>
+                   <div class="analysis-text">
+                     {{ currentQuestion.analysis || '暂无详细解析，请参考正确答案进行复习。' }}
+                   </div>
+                 </div>
+              </div>
+            </transition>
           </div>
-        </transition>
-      </div>
-    </transition>
+        </div>
+      </transition>
+    </div>
   </div>
 </template>
 
@@ -416,9 +489,67 @@ const handleKeyup = (e) => {
 
 onMounted(() => {
   loadSubjects()
+  generateDoodles()
   window.addEventListener('keyup', handleKeyup)
 })
 onUnmounted(() => window.removeEventListener('keyup', handleKeyup))
+
+// === Doodle Logic ===
+const doodles = ref([])
+const doodleIcons = [
+  // Star
+  "M50 5 L61 35 L95 35 L68 55 L79 85 L50 65 L21 85 L32 55 L5 35 L39 35 Z",
+  // Spiral/Coil
+  "M30,50 A20,20 0 1,1 70,50 A20,20 0 1,1 30,50 M35,50 A15,15 0 1,0 65,50 A15,15 0 1,0 35,50",
+  // Wave
+  "M10 50 Q 25 20, 40 50 T 70 50 T 100 50",
+  // Bulb (Simple)
+  "M35 20 C 25 20, 20 30, 20 45 C 20 55, 30 65, 35 70 L 35 80 L 65 80 L 65 70 C 70 65, 80 55, 80 45 C 80 30, 75 20, 65 20 Z M 40 85 L 60 85",
+  // Arrow
+  "M20 80 Q 50 20, 80 50 L 70 45 M 80 50 L 75 60",
+  // Cross/Sparkle
+  "M50 10 L50 90 M10 50 L90 50",
+  // Triangle
+  "M50 15 L85 80 L15 80 Z"
+]
+
+const generateDoodles = () => {
+  const count = 12 // Number of doodles
+  const newDoodles = []
+  
+  for (let i = 0; i < count; i++) {
+    const isLeft = Math.random() > 0.5
+    
+    // Random position: 
+    // Left side: 2% to 15%
+    // Right side: 85% to 98%
+    const xPos = isLeft 
+      ? 2 + Math.random() * 13 
+      : 85 + Math.random() * 13
+      
+    const yPos = Math.random() * 90 + 5 // 5% to 95% height
+    
+    const size = 30 + Math.random() * 40 // 30px to 70px
+    const rotation = Math.random() * 360
+    const delay = Math.random() * 5 // 0-5s delay
+    const duration = 3 + Math.random() * 4 // 3-7s float duration
+    
+    newDoodles.push({
+      path: doodleIcons[Math.floor(Math.random() * doodleIcons.length)],
+      style: {
+        left: `${xPos}%`,
+        top: `${yPos}%`,
+        width: `${size}px`,
+        height: `${size}px`,
+        transform: `rotate(${rotation}deg)`,
+        animationDelay: `-${delay}s`, // start at random time
+        animationDuration: `${duration}s`
+      },
+      opacity: 0.1 + Math.random() * 0.2 // 0.1 to 0.3 opacity
+    })
+  }
+  doodles.value = newDoodles
+}
 
 const startPractice = async () => {
   try {
@@ -512,219 +643,410 @@ const exitPractice = () => {
 </script>
 
 <style scoped>
+/* 全局变量定义在组件作用域内 */
 .practice-container {
-  max-width: 800px;
+  --paper-bg: #fffdf7; /* 更亮、更干净的纸张色 */
+  --shadow-hard: 4px 4px 0px rgba(0,0,0,0.15);
+  
+  max-width: 850px; /* 缩小宽度，防止视觉疲劳 */
   margin: 0 auto;
-  min-height: 80vh;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 16px;
+  
+  /* 核心背景风格：点阵纸张 - 更淡雅 */
+  background-color: var(--paper-bg);
+  background-image: radial-gradient(rgba(0,0,0,0.08) 2px, transparent 2px);
+  background-size: 24px 24px;
+  
+  /* 核心字体 */
+  font-family: 'Patrick Hand', cursive;
+  color: #2c3e50;
 }
 
-/* 筛选面板 */
-.filter-panel {
-  width: 100%;
-  max-width: 400px;
+/* Filter Configuration */
+.filter-panel { width: 100%; max-width: 480px; }
+
+/* 必须穿透 NCard 的样式来应用手绘风 */
+:deep(.n-card) {
+  background-color: #fff;
+  border: 2px solid #2c3e50 !important;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px !important;
+  box-shadow: var(--shadow-hard) !important;
 }
-.config-card {
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+
+.config-header { text-align: center; margin-bottom: 24px; }
+.config-title { 
+  font-family: 'Gochi Hand', cursive; 
+  font-size: 36px; /* 缩小标题 */
+  color: #2c3e50; 
+  margin-bottom: 8px; 
+  text-shadow: 2px 2px 0px rgba(0,0,0,0.05);
+  transform: rotate(-2deg);
 }
+.config-subtitle { font-size: 16px; color: #57606a; font-family: 'Patrick Hand', cursive; }
+.form-label { font-size: 18px; font-weight: 700; color: #2c3e50; margin-bottom: 6px; transform: rotate(-1deg); display: inline-block;}
+
 .start-btn {
-  height: 48px;
-  font-size: 16px;
-  margin-top: 12px;
+  height: 56px;
+  font-size: 22px;
+  font-family: 'Gochi Hand', cursive;
+  margin-top: 20px;
+  border: 2px solid #2c3e50;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  box-shadow: 3px 3px 0px #2c3e50;
+  background-color: #ffb7b2; /* 嫩粉色 */
+  color: #2c3e50;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.start-btn:hover {
+  transform: translate(-1px, -1px) rotate(1deg);
+  box-shadow: 5px 5px 0px #2c3e50;
+}
+.start-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #2c3e50;
 }
 
-/* 题目面板 */
-.question-panel {
-  width: 100%;
+/* Question Wrapper */
+.question-wrapper { width: 100%; max-width: 760px; position: relative; }
+
+.focus-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 12px; 
+    padding: 0 12px;
+}
+.progress-info { display: flex; align-items: center; gap: 12px; flex: 1; }
+.progress-label { font-size: 14px; font-weight: 700; color: #57606a; transform: rotate(-2deg); }
+.progress-text { 
+  font-size: 16px; 
+  font-weight: 700; 
+  color: #2c3e50; 
   background: #fff;
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+  border: 2px solid #2c3e50;
+  padding: 2px 10px; 
+  border-radius: 12px 22px 14px 24px;
+  box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+  transform: rotate(1deg);
+}
+.close-btn { 
+  color: #2c3e50; 
+  transition: all 0.2s; 
+  font-weight: bold;
+}
+.close-btn:hover { 
+  transform: rotate(90deg) scale(1.1); 
+  color: #ef4444;
+}
+
+/* Paper Card Effect - The Main Stage */
+.paper-effect {
+  background: #fffdf7; /* Use explicit creamy paper color for the card only */
+  border: 2px solid #2c3e50;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
   position: relative;
+  
+  /* Deep shadow for "floating on desk" effect */
+  box-shadow: 
+    0 1px 1px rgba(0,0,0,0.05), 
+    0 2px 2px rgba(0,0,0,0.05), 
+    0 4px 4px rgba(0,0,0,0.05), 
+    0 8px 8px rgba(0,0,0,0.05),
+    0 16px 16px rgba(0,0,0,0.05);
+    
+  padding: 36px 40px; /* 减少内边距 */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.question-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-.header-left {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-.header-right {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-.subject-text {
-  color: #666;
-  font-size: 14px;
+.paper-effect:hover {
+  transform: rotate(-0.3deg);
+  box-shadow: 6px 6px 0px rgba(0,0,0,0.2);
 }
 
-.question-content {
-  font-size: 18px;
-  line-height: 1.6;
-  color: #1f2225;
-  font-weight: 500;
-  margin-bottom: 32px;
-}
-
-/* 选项列表 */
-.options-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.option-item {
-  display: flex;
-  align-items: center;
-  padding: 16px 20px;
-  border: 2px solid #f0f0f0;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-}
-
-.option-item:hover:not(.disabled) {
-  border-color: #18a058;
-  background-color: #f0fdf4;
-}
-
-.option-item.selected {
-  border-color: #18a058;
-  background-color: #e7fcf0;
-}
-
-.option-item.disabled {
-  cursor: default;
-}
-
-/* 结果高亮 */
-.option-item.correct-highlight {
-  border-color: #18a058;
-  background-color: #e7fcf0;
-}
-.option-item.error-highlight {
-  border-color: #d03050;
-  background-color: #fff0f0;
-}
-
-.option-key {
+/* Holes decoration */
+.paper-holes {
+  position: absolute;
+  top: 15px;
+  right: 15px;
   width: 32px;
   height: 32px;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  margin-right: 16px;
-  color: #666;
-  flex-shrink: 0;
-}
-.option-item.selected .option-key {
-  background: #18a058;
-  color: #fff;
-  border-color: #18a058;
+  background-image: radial-gradient(#2c3e50 20%, transparent 20%);
+  background-size: 8px 8px;
+  opacity: 0.1;
+  transform: rotate(15deg);
 }
 
-/* 多选框样式 */
-.option-checkbox {
-  width: 24px;
-  height: 24px;
-  border: 2px solid #ddd;
-  border-radius: 4px;  /* 方形 */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 16px;
+.question-header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: flex-start; 
+  margin-bottom: 24px; 
+  border-bottom: 2px dashed #cbd5e1;
+  padding-bottom: 12px;
+}
+.type-tag {
+  border: 2px solid #2c3e50 !important;
+  font-weight: bold;
+  font-family: 'Patrick Hand', cursive;
+  box-shadow: 1px 1px 0px rgba(0,0,0,0.1);
+}
+.subject-text { margin-left: 10px; font-size: 14px; color: #57606a; font-weight: 700; font-family: 'Gochi Hand', cursive; letter-spacing: 1px; }
+
+.question-content { 
+  font-size: 22px; /* 字体调小 */
+  font-weight: 600; 
+  line-height: 1.5; 
+  color: #2c3e50; 
+  margin-bottom: 32px; 
+  font-family: 'Didact Gothic', 'Patrick Hand', sans-serif;
+}
+
+/* Options as Doodle Boxes */
+.options-list { display: flex; flex-direction: column; gap: 16px; }
+
+.option-item {
+  display: flex; align-items: center; padding: 14px 20px; /* 减少选项内边距 */
+  border: 2px solid #2c3e50;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  cursor: pointer; 
+  transition: all 0.2s; 
+  background: #fff;
+  position: relative;
+  min-height: 50px;
+}
+
+.option-item:hover:not(.disabled) { 
+  border-color: #2c3e50; 
+  background: #fff; 
+  transform: scale(1.01) rotate(-0.3deg); 
+  box-shadow: 3px 3px 0px rgba(0,0,0,0.1); 
+}
+
+/* Selected: Marker Effect */
+.option-item.selected { 
+  border-color: #2c3e50; 
+  background: #a2d2ff; /* 淡蓝色记号笔 */
+  box-shadow: 3px 3px 0px #2c3e50;
+  transform: rotate(0.5deg);
+}
+
+/* Analysis States */
+.option-item.correct-highlight { 
+  background-color: #ccfbf1;
+  border-color: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+}
+
+.option-item.error-highlight { 
+  background-color: #fee2e2;
+  border-color: #ef4444;
+  background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(239, 68, 68, 0.05) 10px, rgba(239, 68, 68, 0.05) 20px);
+}
+
+.option-key { 
+  width: 30px; height: 30px; 
+  background: #fff; 
+  border: 2px solid #2c3e50;
+  border-radius: 50% 40% 60% 50% / 40% 50% 60% 50%;
+  display: flex; align-items: center; justify-content: center; 
+  font-weight: 700; color: #2c3e50; 
+  margin-right: 16px; font-size: 16px;
+  font-family: 'Gochi Hand', cursive;
+  box-shadow: 1px 1px 0px rgba(0,0,0,0.1);
   transition: all 0.2s;
   flex-shrink: 0;
-  font-size: 16px;
 }
 
-.option-checkbox.checked {
-  background: #18a058;
-  border-color: #18a058;
+.option-item.selected .option-key { 
+  background: #2c3e50; 
   color: #fff;
+  transform: rotate(-8deg);
 }
 
-.checkbox-item .option-text {
-  flex: 1;
+.option-text { flex: 1; font-size: 17px; color: #334155; font-weight: 600; line-height: 1.35; } 
+.center-text { text-align: center; font-size: 20px; font-family: 'Gochi Hand', cursive; }
+
+/* Checkbox Style */
+.option-checkbox {
+  width: 24px; height: 24px; border: 2px solid #2c3e50; margin-right: 14px;
+  border-radius: 4px 8px 3px 9px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.option-checkbox.checked { background: #2c3e50; color: #fff; }
+
+/* Action Bar with Decorations */
+.action-bar { 
+  margin-top: 40px; 
+  display: flex; 
+  justify-content: center; 
+  align-items: center;
+  position: relative;
 }
 
-.option-text {
-  font-size: 16px;
-  color: #333;
-  flex: 1;
+.action-btn { 
+  min-width: 140px; 
+  height: 52px; 
+  font-size: 20px !important; 
+  font-family: 'Gochi Hand', cursive; 
+  font-weight: 600; 
+  letter-spacing: 1px;
+  border: 2px solid #2c3e50 !important;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px !important;
+  box-shadow: 4px 4px 0px #2c3e50 !important;
+  color: #2c3e50 !important;
+  background-color: #fcd34d !important; /* Restore Yellow */
+  transition: all 0.2s !important;
 }
-.center-text {
+
+/* === NEW STYLES for Full Screen + Doodles === */
+
+/* 1. Reset Container to Full Screen */
+/* 1. Reset Container to Full Screen */
+.practice-container {
+  --paper-bg: #fffdf7; /* Creamy paper for the center card */
+  --desk-bg: #f1f5f9;  /* Slate-100 for the desk */
+  
   width: 100%;
-  text-align: center;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden; /* Contains the doodles */
+  
+  display: flex;
+  justify-content: center;
+  align-items: center; /* Vertically center the content */
+  padding: 16px;
+  
+  /* Candy Stripe Background (Neo-Brutalist Layout) */
+  background-color: #fff;
+  background-image: repeating-linear-gradient(
+    45deg,
+    #fff,
+    #fff 40px,
+    #ffe4e6 40px, /* Rose-100 */
+    #ffe4e6 80px
+  );
+  
+  font-family: 'Patrick Hand', cursive;
+  color: #2c3e50;
 }
 
-.result-icon {
-  margin-left: auto;
+/* 2. Doodles Layer - Pencil Sketches on Desk */
+.doodles-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Let clicks pass through */
+  z-index: 0;
 }
 
-/* 底部操作栏 */
-.action-bar {
-  margin-top: 32px;
+.doodle-item {
+  position: absolute;
+  color: #94a3b8; /* Slate-400 for doodles - pencil lead color */
+  mix-blend-mode: multiply; /* Blend into the desk */
+  animation: float ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(2deg); }
+}
+
+/* 3. Content Wrapper (The "Safe Zone" for valid UI) */
+.content-wrapper {
+  position: relative;
+  z-index: 1; /* Above doodles */
+  width: 100%;
+  max-width: 850px;
+  /* Flex item behavior */
   display: flex;
   justify-content: center;
 }
-.action-btn {
-  width: 200px;
+
+/* Ensure the cards take up space properly inside wrapper */
+.filter-panel, .question-wrapper {
+  width: 100%;
+  /* Max-widths are already handled by internal classes, 
+     but we ensure they center inside content-wrapper */
 }
 
-/* 解析盒子 */
+/* Re-verify filter panel centering */
+.filter-panel { 
+  max-width: 480px; 
+  margin: 0 auto;
+}
+
+.question-wrapper {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+
+
+.action-btn:hover {
+  transform: translate(-1px, -1px) rotate(-1deg);
+  box-shadow: 6px 6px 0px #2c3e50 !important;
+}
+.action-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #2c3e50 !important;
+}
+.action-btn:disabled {
+  background-color: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Decor Arrow */
+.decor-arrow-next {
+  position: absolute;
+  right: -50px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-10deg);
+  width: 50px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+.decor-arrow-prev {
+  position: absolute;
+  left: -50px;
+  top: 50%;
+  transform: translateY(-50%) rotate(190deg);
+  width: 50px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Analysis Box */
 .analysis-box {
   margin-top: 32px;
-  background: #f9fafb;
+  background: #fff;
+  border: 2px dashed #2c3e50;
   border-radius: 12px;
-  padding: 20px;
-  border: 1px solid #eee;
+  padding: 24px;
+  box-shadow: 4px 4px 0px rgba(0,0,0,0.05);
+  transform: rotate(0.2deg);
 }
-.analysis-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 12px;
+.analysis-title { 
+  display: flex; align-items: center; gap: 8px; 
+  font-weight: 700; color: #2c3e50; font-size: 18px; 
+  font-family: 'Gochi Hand', cursive;
 }
-.analysis-header .label {
-  font-weight: bold;
-  color: #333;
-}
-.analysis-content {
-  font-size: 15px;
-  color: #4b5563;
-  line-height: 1.6;
-}
-.text-gray {
-  color: #999;
-}
+.analysis-content { padding-left: 0; border-left: none; margin-top: 12px; }
+.correct-answer-row { font-size: 16px; margin-bottom: 8px; font-family: 'Patrick Hand', cursive; }
+.correct-answer-row .value { color: #10b981; font-weight: 700; font-size: 20px; text-decoration: underline; text-decoration-style: wavy;}
 
-/* 动画 */
-.fade-enter-active, .fade-leave-active {
-  transition: all 0.3s ease;
-}
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
-}
-
-.slide-up-enter-active {
-  transition: all 0.3s ease-out;
-}
-.slide-up-enter-from {
-  opacity: 0;
-  transform: translateY(20px);
-}
+/* Animations */
+.slide-up-enter-active { transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); } 
+.slide-up-enter-from { opacity: 0; transform: translateY(30px) rotate(3deg); }
+.fade-leave-active { transition: opacity 0.2s; }
+.fade-leave-to { opacity: 0; }
 </style>

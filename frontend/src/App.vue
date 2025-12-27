@@ -3,7 +3,7 @@
     <n-message-provider>
       <n-dialog-provider>
         <n-notification-provider>
-          <router-view />
+          <GlobalProvider />
         </n-notification-provider>
       </n-dialog-provider>
     </n-message-provider>
@@ -11,7 +11,19 @@
 </template>
 
 <script setup>
-import { NConfigProvider, NMessageProvider, NDialogProvider, NNotificationProvider } from 'naive-ui'
+import { h, defineComponent } from 'vue'
+import { RouterView } from 'vue-router'
+import { NConfigProvider, NMessageProvider, NDialogProvider, NNotificationProvider, useMessage } from 'naive-ui'
+
+// 全局 Provider 组件，用于暴露 message 到 window
+const GlobalProvider = defineComponent({
+  name: 'GlobalProvider',
+  setup() {
+    // 将 message 暴露到 window，供 request.js 使用
+    window.$message = useMessage()
+    return () => h(RouterView)
+  }
+})
 
 const themeOverrides = {
   common: {
@@ -47,11 +59,11 @@ const themeOverrides = {
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--font-family-base, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f8fafc; /* 更干净的背景色 (Slate 50) */
-  color: #1e293b; /* Slate 800 */
+  background-color: var(--color-n-50, #f8fafc);
+  color: var(--color-n-800, #1e293b);
 }
 
 #app {
@@ -61,15 +73,17 @@ body {
 
 /* 滚动条美化 (Mac OS风格) */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
+  background: var(--color-n-300, #cbd5e1);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background-color: var(--color-n-400, #94a3b8);
 }
 ::-webkit-scrollbar-track {
   background: transparent;

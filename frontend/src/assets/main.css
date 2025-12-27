@@ -1,0 +1,143 @@
+:root {
+  /* =================================================================
+     Color Palette (HSL)
+     Designed for a Premium Educational SaaS (China Market)
+     Theme: "Modern Emerald & Warm Slate" (Focus, Growth, Professional)
+     ================================================================= */
+
+  /* Primary Brand (Emerald/Teal - Growth, Success) */
+  --primary-hue: 160;
+  --primary-sat: 84%;
+  --primary-light: 39%;
+  --color-primary: hsl(var(--primary-hue), var(--primary-sat), var(--primary-light));       /* #10b981 */
+  --color-primary-hover: hsl(var(--primary-hue), var(--primary-sat), 45%);                  /* Lighter for hover */
+  --color-primary-active: hsl(var(--primary-hue), var(--primary-sat), 35%);                 /* Darker for active */
+  --color-primary-bg: hsl(var(--primary-hue), 90%, 96%);                                    /* Very light tint for backgrounds */
+
+  /* Secondary/Accent (Indigo - Depth, Wisdom / Coral - Action) */
+  --color-secondary: hsl(226, 70%, 55%);  /* Soft Indigo #4f46e5 */
+  --color-accent: hsl(24, 95%, 60%);      /* Energetic Coral #f97316 */
+
+  /* Neutral Scale (Slate - Professional, Clean) */
+  --color-n-0: #ffffff;
+  --color-n-50: #f8fafc;  /* Main App Background */
+  --color-n-100: #f1f5f9; /* Secondary Background */
+  --color-n-200: #e2e8f0; /* Borders */
+  --color-n-300: #cbd5e1; /* Icons/Disabled */
+  --color-n-400: #94a3b8; /* Secondary Text */
+  --color-n-500: #64748b; /* Main Text */
+  --color-n-600: #475569; /* Headings */
+  --color-n-700: #334155;
+  --color-n-800: #1e293b; /* Darkest Text */
+  --color-n-900: #0f172a; /* Deep Backgrounds */
+
+  /* Semantic Colors */
+  --color-success: hsl(150, 100%, 35%);
+  --color-warning: hsl(35, 100%, 55%);
+  --color-error: hsl(345, 90%, 55%);
+  --color-info: hsl(210, 100%, 60%);
+
+  /* =================================================================
+     Shadows (Soft, Diffused, Expensive-looking)
+     ================================================================= */
+  
+  /* Small: Buttons, Inputs */
+  --shadow-sm: 
+    0 1px 2px rgba(0, 0, 0, 0.04), 
+    0 1px 1px rgba(0, 0, 0, 0.02);
+
+  /* Medium: Cards, Dropdowns */
+  --shadow-md: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -1px rgba(0, 0, 0, 0.03),
+    0 10px 15px -3px rgba(0, 0, 0, 0.03);
+
+  /* Large: Modals, Floating Elements */
+  --shadow-lg: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.05),
+    0 10px 10px -5px rgba(0, 0, 0, 0.02);
+
+  /* Glow: Focused states */
+  --shadow-glow-primary: 0 0 0 3px hsla(var(--primary-hue), var(--primary-sat), var(--primary-light), 0.2);
+
+  /* =================================================================
+     Typography & Layout
+     ================================================================= */
+  --font-family-base: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+  
+  --transition-base: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Base Styles */
+body {
+  background-color: var(--color-n-50);
+  color: var(--color-n-600);
+  font-family: var(--font-family-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* =================================================================
+   Utility Classes
+   ================================================================= */
+
+/* Glassmorphism Configuration 
+   Usage: class="glass" or class="glass-dark"
+*/
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.glass-dark {
+  background: rgba(15, 23, 42, 0.75); /* Dark Slate 900 base */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Modern Card */
+.card-premium {
+  background: var(--color-n-0);
+  border: 1px solid var(--color-n-100);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-lg);
+  transition: var(--transition-base);
+}
+
+.card-premium:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-n-200);
+}
+
+/* Gradients */
+.bg-gradient-primary {
+  background: linear-gradient(135deg, var(--color-primary) 0%, hsl(var(--primary-hue), var(--primary-sat), 30%) 100%);
+}
+
+.bg-gradient-dark {
+  background: linear-gradient(135deg, var(--color-n-800) 0%, var(--color-n-900) 100%);
+}
+
+/* Text Utilities */
+.text-gradient {
+  background: linear-gradient(120deg, var(--color-n-800), var(--color-n-600));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-primary {
+  background: linear-gradient(120deg, var(--color-primary), var(--color-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

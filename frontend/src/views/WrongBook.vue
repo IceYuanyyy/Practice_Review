@@ -1,350 +1,381 @@
 <template>
   <div class="wrong-book-container">
-    <div class="page-header">
-      <div class="header-left">
-        <h2 class="page-title">错题本</h2>
-        <div class="stats-badge">
+    <div class="wall-header">
+      <div class="header-content">
+        <h2 class="page-title">我的错题集</h2>
+        <div class="stats-decoration">
           <span class="count">{{ practiceStore.wrongQuestions.length }}</span>
-          <span class="label">道错题</span>
+          <span class="label">个灵感碎片</span>
         </div>
       </div>
-      <n-button 
-        v-if="practiceStore.wrongQuestions.length > 0" 
-        type="error" 
-        ghost
-        @click="clearWrongBook"
-        class="clear-btn"
-      >
-        <template #icon><n-icon :component="TrashOutline"/></template>
-        清空错题本
-      </n-button>
+      
+      <div class="actions-area">
+        <div class="sketch-input-group">
+           <n-input placeholder="搜索关键词..." class="sketch-input" round>
+             <template #prefix>
+               <n-icon :component="SearchOutline" />
+             </template>
+           </n-input>
+        </div>
+        
+        <n-button 
+          v-if="practiceStore.wrongQuestions.length > 0" 
+          text
+          class="clear-link"
+          @click="clearWrongBook"
+        >
+          <template #icon><n-icon :component="TrashOutline"/></template>
+          全部撕掉 (清空)
+        </n-button>
+      </div>
     </div>
 
     <!-- 空状态 -->
-    <n-card v-if="practiceStore.wrongQuestions.length === 0" :bordered="false" class="empty-card">
-      <n-empty description="太棒了！目前没有错题" class="empty-state">
-        <template #icon>
-          <div class="success-icon-bg">
-            <n-icon :component="CheckmarkCircle" size="64" color="#10b981" />
-          </div>
-        </template>
-        <template #extra>
-          <n-button type="primary" size="large" @click="router.push('/practice')" class="practice-btn">
-            去练习新题
-          </n-button>
-        </template>
-      </n-empty>
-    </n-card>
+    <div v-if="practiceStore.wrongQuestions.length === 0" class="empty-wall">
+       <div class="empty-sketch">
+         <n-icon :component="HappyOutline" size="80" color="#cbd5e1" />
+         <p>墙面空空如也，太棒了！</p>
+         <n-button class="sketch-btn primary" @click="router.push('/practice')">
+           去收集新灵感 (练习)
+         </n-button>
+       </div>
+    </div>
 
-    <!-- 错题列表 -->
-    <div v-else class="question-list">
-      <n-card
+    <!-- 错题墙 (Grid Layout) -->
+    <div v-else class="sticky-wall">
+      <div
         v-for="(question, index) in practiceStore.wrongQuestions"
         :key="question.id"
-        :bordered="false"
-        class="question-card"
-        content-style="padding: 0;"
+        class="sticky-note"
+        :class="[getNoteColor(index)]"
+        :style="getNoteStyle(index)"
       >
-        <div class="card-content">
-          <div class="question-header">
-            <span class="index-badge">#{{ index + 1 }}</span>
-            <n-tag :bordered="false" size="small" :type="getTypeTagType(question.type)" class="type-tag">
+        <!-- 胶带效果 -->
+        <div class="tape-strip"></div>
+        
+        <div class="note-content">
+          <div class="note-header">
+            <span class="note-index">#{{ index + 1 }}</span>
+            <div class="doodle-tag" :class="question.type">
               {{ getTypeLabel(question.type) }}
-            </n-tag>
-            <n-tag :bordered="false" size="small" type="default" class="subject-tag">
-              {{ question.subject }}
-            </n-tag>
-          </div>
-
-          <div class="question-body">
-            <h3 class="question-text">{{ question.content }}</h3>
-            
-            <div 
-              v-if="['single-choice', 'multiple-choice', 'choice'].includes(question.type)" 
-              class="options-list"
-            >
-              <div 
-                v-for="option in parseOptions(question.options)" 
-                :key="option"
-                class="option-item"
-              >
-                {{ option }}
-              </div>
             </div>
           </div>
 
-          <div class="analysis-section">
-            <div class="answer-row">
-              <span class="label">正确答案：</span>
-              <span class="correct-answer">{{ question.answer }}</span>
-            </div>
-            
-            <div v-if="question.analysis" class="analysis-box">
-              <div class="analysis-title">
-                <n-icon :component="BulbOutline" color="#f59e0b" />
-                解析
-              </div>
-              <p class="analysis-text">{{ question.analysis }}</p>
-            </div>
+          <p class="question-text">{{ question.content }}</p>
+          
+          <div class="note-actions">
+            <!-- 简单的文字链接按钮 -->
+            <n-button text class="action-link remove" @click="removeQuestion(question.id)">
+              移除
+            </n-button>
+             <n-button text class="action-link retake" @click="retakeQuestion(question)">
+              重练
+            </n-button>
+          </div>
+          
+          <!-- 解析部分 (默认折叠/简化显示) -->
+          <div class="note-footer">
+             <div class="answer-peek">
+               <span>Ans: </span>
+               <span class="correct-val">{{ question.answer }}</span>
+             </div>
           </div>
         </div>
-      </n-card>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { useRouter } from 'vue-router'
-import { NSpace, NCard, NIcon, NText, NTag, NButton, NEmpty, useDialog, useMessage } from 'naive-ui'
-import { BookmarkOutline, CheckmarkCircle, TrashOutline, BulbOutline } from '@vicons/ionicons5'
+import { NIcon, NButton, NInput, useDialog, useMessage } from 'naive-ui'
+import { TrashOutline, SearchOutline, HappyOutline } from '@vicons/ionicons5'
 import { usePracticeStore } from '@/stores/practice'
+import { clearWrongBook as clearWrongBookApi, getWrongQuestions } from '@/api/practice'
 
 const router = useRouter()
 const dialog = useDialog()
 const message = useMessage()
 const practiceStore = usePracticeStore()
 
-const getTypeTagType = (type) => {
-  const map = {
-    'single-choice': 'primary',
-    'multiple-choice': 'warning',
-    'judge': 'info',
-    'choice': 'primary'
+// 随机样式生成器 (使用索引作为种子，保证列表重排时颜色相对稳定，或者简化处理)
+const getNoteColor = (index) => {
+  const colors = ['note-yellow', 'note-blue', 'note-pink', 'note-green'];
+  return colors[index % colors.length];
+}
+
+const getNoteStyle = (index) => {
+  // 伪随机旋转角度：-2deg 到 2deg
+  // 使用简单的哈希算法保证同一个索引的旋转角度一致（避免重绘导致抖动）
+  const seed = index * 12345; 
+  const rotation = ((seed % 50) - 25) / 10; // -2.5 to 2.5
+  return {
+    transform: `rotate(${rotation}deg)`
   }
-  return map[type] || 'default'
 }
 
 const getTypeLabel = (type) => {
   const map = {
-    'single-choice': '单选题',
-    'multiple-choice': '多选题',
-    'judge': '判断题',
-    'choice': '选择题'
+    'single-choice': '单选',
+    'multiple-choice': '多选',
+    'judge': '判断',
+    'choice': '选择'
   }
-  return map[type] || type
+  return map[type] || '其他'
 }
-
-const parseOptions = (options) => {
-  try {
-    if (Array.isArray(options)) {
-      return options
-    }
-    return JSON.parse(options || '[]')
-  } catch (e) {
-    console.error('解析选项失败:', e)
-    return []
-  }
-}
-
-import { clearWrongBook as clearWrongBookApi, getWrongQuestions } from '@/api/practice'
-
-// ... existing imports
 
 const clearWrongBook = () => {
   dialog.warning({
     title: '确认清空',
-    content: '确定要清空错题本吗？此操作不可恢复！',
-    positiveText: '确认清空',
-    negativeText: '取消',
+    content: '要把墙上的便利贴都撕掉吗？',
+    positiveText: '是的，全部撕掉',
+    negativeText: '留着吧',
     onPositiveClick: async () => {
       try {
         await clearWrongBookApi()
         practiceStore.wrongQuestions = []
-        message.success('已清空错题本')
-        // 重新加载数据以确保同步
-        loadData() 
+        message.success('错题墙已清空')
       } catch (error) {
-        console.error('清空失败', error)
-        message.error('清空失败')
+        message.error('操作失败')
       }
     }
   })
 }
 
-const loadData = async () => {
-  // 这里假设 store 有 actions 或者直接调用 API 更新 store
-  // 如果 store 没有现成的 load action，我们手动调用
-  try {
-     const res = await getWrongQuestions({ page: 1, size: 1000 }) // 获取足够多的错题用于展示，或者使用 store 的 action
-     if (res.code === 200) {
-       practiceStore.wrongQuestions = res.data.records
-     }
-  } catch (e) {
-    console.error('加载错题失败', e)
+// 模拟移除单个（实际API可能需补充）
+const removeQuestion = (id) => {
+  // 这里暂时只操作本地store，实际应调用后端接口
+  const idx = practiceStore.wrongQuestions.findIndex(q => q.id === id)
+  if (idx > -1) {
+    practiceStore.wrongQuestions.splice(idx, 1)
+    message.info('便利贴已撕下')
   }
 }
 
-// 确保组件挂载时加载数据（如果原有代码没有加载逻辑的话）
-// onMounted(() => { loadData() })
+const retakeQuestion = (question) => {
+  // 简单的重练逻辑：跳转到练习页并带上题目ID，或者弹窗
+  // 这里简单提示
+  message.success('开始重新练习该题')
+  // 实际逻辑可扩展
+}
 </script>
 
 <style scoped>
 .wrong-book-container {
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding-bottom: 60px;
+  padding: 40px 20px;
+  min-height: 80vh;
+  font-family: 'Patrick Hand', cursive;
 }
 
-.page-header {
+/* Header Styles */
+.wall-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 48px;
+  border-bottom: 3px dashed #cbd5e1;
+  padding-bottom: 20px;
+}
+
+.header-content { display: flex; align-items: baseline; gap: 20px; }
+
+.page-title {
+  font-family: 'Gochi Hand', cursive;
+  font-size: 42px;
+  color: #1e293b;
+  position: relative;
+  margin: 0;
+  z-index: 1;
+}
+
+/* Highlighter Effect */
+.page-title::after {
+  content: '';
+  position: absolute;
+  bottom: 5px;
+  left: -5px;
+  right: -5px;
+  height: 15px;
+  background: rgba(253, 224, 71, 0.6); /* Yellow highlighter */
+  z-index: -1;
+  transform: rotate(-1deg);
+  border-radius: 4px;
+}
+
+.stats-decoration {
+  font-size: 18px;
+  color: #64748b;
+  font-weight: 700;
+}
+.stats-decoration .count { font-size: 24px; color: #ef4444; margin-right: 4px; }
+
+/* Actions */
+.actions-area { display: flex; align-items: center; gap: 24px; }
+
+.sketch-input {
+  width: 240px;
+  font-family: 'Patrick Hand', cursive;
+}
+/* Deep selector for input border override */
+:deep(.n-input) {
+  border: 2px solid #94a3b8 !important;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px !important;
+  background: transparent !important;
+  transition: all 0.2s;
+}
+:deep(.n-input:hover), :deep(.n-input:focus-within) {
+  border-color: #2c3e50 !important;
+  box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+}
+
+.clear-link {
+  font-size: 18px;
+  color: #ef4444;
+  font-family: 'Gochi Hand', cursive;
+  text-decoration: none;
+  border-bottom: 2px dashed #ef4444;
+}
+.clear-link:hover {
+  border-bottom-style: solid;
+}
+
+/* Empty State */
+.empty-wall {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+.empty-sketch {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 24px;
+}
+.sketch-btn {
+  margin-top: 24px;
+  font-family: 'Gochi Hand', cursive;
+  font-size: 20px;
+  padding: 10px 30px;
+  border: 2px solid #2c3e50;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 4px 4px 0px #2c3e50;
+  transition: all 0.2s;
+}
+.sketch-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #2c3e50;
+}
+
+/* Sticky Note Wall Grid */
+.sticky-wall {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 32px;
+  padding: 20px;
+}
+
+/* Sticky Note Component */
+.sticky-note {
+  position: relative;
+  padding: 24px;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 4px 8px rgba(0,0,0,0.15);
+  transition: transform 0.3s ease;
+  font-size: 18px;
+  color: #334155;
+}
+
+.sticky-note:hover {
+  transform: scale(1.05) rotate(0deg) !important; /* Suspend rotation on hover for readability */
+  z-index: 10;
+  box-shadow: 5px 10px 15px rgba(0,0,0,0.2);
+}
+
+/* Tape Strip */
+.tape-strip {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 100px;
+  height: 30px;
+  background-color: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255,255,255,0.2);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  backdrop-filter: blur(2px); /* Frosted glass tape effect */
+}
+
+/* Note Colors */
+.note-yellow { background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 100%); }
+.note-blue { background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%); }
+.note-pink { background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%); }
+.note-green { background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); }
+
+.note-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.page-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0;
-}
-
-.stats-badge {
-  background: #fee2e2;
-  color: #ef4444;
-  padding: 4px 12px;
-  border-radius: 20px;
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-}
-
-.stats-badge .count {
-  font-weight: 700;
-  font-size: 18px;
-}
-
-.stats-badge .label {
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.empty-card {
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-  padding: 40px 0;
-}
-
-.success-icon-bg {
-  width: 80px;
-  height: 80px;
-  background: #ecfdf5;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;
-}
-
-.practice-btn {
-  font-weight: 600;
-  padding: 0 32px;
-}
-
-.question-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.question-card {
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-  overflow: hidden;
-  transition: transform 0.2s;
-}
-
-.question-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
-}
-
-.card-content {
-  padding: 24px;
-}
-
-.question-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   margin-bottom: 16px;
 }
-
-.index-badge {
-  font-size: 14px;
-  color: #9ca3af;
-  font-family: monospace;
+.note-index {
+  font-weight: 700;
+  color: rgba(0,0,0,0.4);
+  font-size: 20px;
 }
+
+/* Doodle Tag */
+.doodle-tag {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border: 2px solid currentColor;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+}
+.doodle-tag.single-choice { color: #0284c7; }
+.doodle-tag.multiple-choice { color: #d97706; }
+.doodle-tag.judge { color: #16a34a; }
 
 .question-text {
-  font-size: 18px;
-  color: #1f2937;
-  line-height: 1.6;
-  margin: 0 0 16px 0;
-}
-
-.options-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex: 1;
+  font-weight: 600;
+  line-height: 1.4;
   margin-bottom: 20px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
 }
 
-.option-item {
-  background: #f9fafb;
-  padding: 8px 12px;
-  border-radius: 8px;
-  color: #4b5563;
-  font-size: 15px;
-}
-
-.analysis-section {
-  background: #f8fafc;
-  padding: 16px;
-  border-radius: 12px;
-  margin-top: 16px;
-}
-
-.answer-row {
-  font-size: 16px;
-  margin-bottom: 12px;
-}
-
-.answer-row .label {
-  color: #64748b;
-}
-
-.correct-answer {
-  color: #10b981;
-  font-weight: 700;
-  font-size: 18px;
-}
-
-.analysis-box {
-  border-top: 1px solid #e2e8f0;
+.note-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px dashed rgba(0,0,0,0.1);
   padding-top: 12px;
 }
 
-.analysis-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #d97706;
-  font-weight: 600;
-  font-size: 14px;
-  margin-bottom: 6px;
+.action-link {
+  font-family: 'Gochi Hand', cursive;
+  font-size: 16px;
+  padding: 0 5px;
 }
+.action-link:hover {
+  text-decoration: underline;
+  text-decoration-style: wavy;
+}
+.action-link.remove { color: #ef4444; }
+.action-link.retake { color: #4f46e5; }
 
-.analysis-text {
-  color: #475569;
+.note-footer {
+  margin-top: 8px;
   font-size: 14px;
-  line-height: 1.6;
-  margin: 0;
+  color: rgba(0,0,0,0.5);
 }
+.correct-val { font-weight: bold; color: #16a34a; }
 </style>

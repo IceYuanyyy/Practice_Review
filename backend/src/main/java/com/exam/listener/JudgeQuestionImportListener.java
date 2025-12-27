@@ -29,19 +29,25 @@ public class JudgeQuestionImportListener extends AnalysisEventListener<JudgeQues
     private QuestionService questionService;
     private SubjectService subjectService;
     private String customSubject; // 自定义科目名称
+    private Long userId; // 导入用户ID
     private int successCount = 0;
     private int failCount = 0;
     // 统计每个科目导入的题目数量
     private Map<String, Integer> subjectCountMap = new HashMap<>();
 
     public JudgeQuestionImportListener(QuestionService questionService, SubjectService subjectService) {
-        this(questionService, subjectService, null);
+        this(questionService, subjectService, null, null);
     }
 
     public JudgeQuestionImportListener(QuestionService questionService, SubjectService subjectService, String customSubject) {
+        this(questionService, subjectService, customSubject, null);
+    }
+
+    public JudgeQuestionImportListener(QuestionService questionService, SubjectService subjectService, String customSubject, Long userId) {
         this.questionService = questionService;
         this.subjectService = subjectService;
         this.customSubject = customSubject;
+        this.userId = userId;
     }
 
     @Override
@@ -132,6 +138,9 @@ public class JudgeQuestionImportListener extends AnalysisEventListener<JudgeQues
         question.setIsMarked(false);
         question.setWrongCount(0);
         question.setPracticeCount(0);
+        
+        // 设置题目所属用户
+        question.setOwnerId(userId);
 
         return question;
     }

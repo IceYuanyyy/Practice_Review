@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: 9090
   servlet:
     context-path: /
 
@@ -12,6 +12,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/exam_practice?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: root
+#    username: exam_practice
     password: 123456
     
   # Jackson 配置
@@ -53,3 +54,20 @@ logging:
   level:
     com.exam: debug
     org.springframework: info
+
+# Sa-Token 配置
+sa-token:
+  # Token 名称（同时也是请求头中携带 Token 时的名称）
+  token-name: Authorization
+  # Token 有效期（7天，单位秒）
+  timeout: 604800
+  # Token 风格
+  token-style: uuid
+  # 是否允许同一账号多地同时登录
+  is-concurrent: true
+  # 在多人登录同一账号时，是否共用一个 Token
+  is-share: false
+  # 是否输出操作日志
+  is-log: false
+  # Token 临时有效期（30分钟无操作则过期，-1表示不限制）
+  active-timeout: 1800

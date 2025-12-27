@@ -254,6 +254,9 @@ const parseQuestionText = (content) => {
     const line = lines[i].trim()
     if (!line) continue
     
+    // 忽略答案行 (e.g. "1-5 A B C D") 防止被识别为题目
+    if (/^\d+-\d+/.test(line)) continue
+    
     // 匹配题号
     const questionMatch = line.match(/^(\d+)[\.\、]?\s*(.+)/)
     if (questionMatch) {
@@ -330,7 +333,7 @@ const convertToExcel = () => {
     
     // 创建选择题工作表
     const choiceData = [
-      ['题目', '选项A', '选项B', '选项C', '选项D', '答案', '解析', '科目', '难度']
+      ['题目', '选项A', '选项B', '选项C', '选项D', '选项E', '答案', '解析', '科目', '难度']
     ]
     
     for (const q of choiceQuestions) {
@@ -340,6 +343,7 @@ const convertToExcel = () => {
         q.options['B'] || '',
         q.options['C'] || '',
         q.options['D'] || '',
+        q.options['E'] || '',
         answers[q.num] || '',
         '',
         subjectName.value || '未分类', // 使用用户输入的科目
@@ -350,7 +354,7 @@ const convertToExcel = () => {
     const wsChoice = XLSX.utils.aoa_to_sheet(choiceData)
     
     wsChoice['!cols'] = [
-      { wch: 50 }, { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 30 },
+      { wch: 50 }, { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 30 },
       { wch: 10 }, { wch: 40 }, { wch: 12 }, { wch: 10 }
     ]
     

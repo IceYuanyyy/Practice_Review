@@ -1,119 +1,144 @@
 <template>
-  <div class="home-container">
-    <div class="welcome-section">
-      <div class="welcome-text">
-        <h2 class="welcome-title">早安，同学！<span class="wave">👋</span></h2>
-        <p class="welcome-subtitle">距离期末考试越来越近了，保持节奏，你没问题的！</p>
+  <div class="anti-home">
+    <!-- 1. Hero: System Wake Terminal -->
+    <div class="terminal-hero">
+      <div class="terminal-header">
+        <span class="status-dot blinking"></span>
+        <span class="terminal-title">SYSTEM_WAKE // 系统唤醒</span>
       </div>
-      <div class="welcome-decoration">
-        <n-icon :component="SchoolOutline" />
+      <div class="terminal-body">
+        <div class="boot-sequence">
+          <div class="glitch-wrapper">
+             <h1 class="hero-title" data-text="WAKE UP, STUDENT">
+               WAKE UP, <br/>
+               <span class="user-highlight">{{ userStore.nickname || 'STUDENT' }}</span>
+             </h1>
+          </div>
+          <p class="console-log">
+            > 检测到主机连接... [OK]<br/>
+            > 同步考试数据流... [OK]<br/>
+            > 距离最终测试还有 <span class="highlight">UNKNOWN</span> 天
+          </p>
+        </div>
+        
+        <!-- Integrity Bar -->
+        <div class="integrity-monitor">
+          <div class="monitor-label">系统完整度 (CORRECT_RATE)</div>
+          <div class="progress-track" :style="{ '--progress': statistics.correctRate + '%' }">
+            <div class="progress-fill"></div>
+            <div class="progress-val">{{ statistics.correctRate }}%</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="decorative-tape">
+        <span>DO NOT POWER OFF</span>
+        <span>请勿断电</span>
+        <span>DO NOT POWER OFF</span>
       </div>
     </div>
 
-    <n-grid :x-gap="24" :y-gap="24" :cols="4" item-responsive responsive="screen" class="stats-grid">
-      <n-grid-item span="4 m:2 l:1">
-        <div class="stat-card blue-card" @click="router.push('/question-manage')">
-          <div class="stat-content">
-            <span class="stat-label">题目总库</span>
-            <span class="stat-value">{{ statistics.totalQuestions }}</span>
+    <!-- 2. Stats: Chaos Grid (Data Fragments) -->
+    <div class="chaos-section">
+      <h3 class="section-label">DATA_FRAGMENTS // 数据碎片</h3>
+      <div class="chaos-grid">
+        <!-- Card 1: Total Loaded -->
+        <div class="chaos-card card-yellow">
+          <div class="card-screw top-left"></div>
+          <div class="card-screw bottom-right"></div>
+          <div class="card-header">
+            <span class="card-id">#001</span>
+            <span class="card-tag">STORAGE</span>
           </div>
-          <div class="stat-icon-bg">
-            <n-icon :component="ListOutline" />
+          <div class="card-main">
+            <div class="card-label">总库载入</div>
+            <div class="card-value font-mono">{{ statistics.totalQuestions }}</div>
+          </div>
+          <div class="card-footer">
+            RUNNING...
           </div>
         </div>
-      </n-grid-item>
 
-      <n-grid-item span="4 m:2 l:1">
-        <div class="stat-card green-card" @click="router.push('/practice')">
-          <div class="stat-content">
-            <span class="stat-label">已刷题目</span>
-            <span class="stat-value">{{ statistics.practiced }}</span>
+        <!-- Card 2: Executed -->
+        <div class="chaos-card card-cyan clicked-effect" @click="router.push('/practice')">
+          <div class="card-header">
+            <span class="card-id">#002</span>
+            <span class="card-tag">EXEC</span>
           </div>
-          <div class="stat-icon-bg">
-            <n-icon :component="CreateOutline" />
+          <div class="card-main">
+            <div class="card-label">已执行</div>
+            <div class="card-value font-mono">{{ statistics.practiced }}</div>
+          </div>
+          <div class="card-footer">
+            STATUS: ACTIVE
           </div>
         </div>
-      </n-grid-item>
 
-      <n-grid-item span="4 m:2 l:1">
-        <div class="stat-card orange-card" @click="router.push('/wrong-book')">
-          <div class="stat-content">
-            <span class="stat-label">待攻克错题</span>
-            <span class="stat-value">{{ statistics.wrongCount }}</span>
+        <!-- Card 3: Exceptions -->
+        <div class="chaos-card card-magenta clicked-effect" @click="router.push('/wrong-book')">
+          <div class="card-header">
+            <span class="card-id">#ERR</span>
+            <span class="card-tag">FATAL</span>
           </div>
-          <div class="stat-icon-bg">
-            <n-icon :component="BookmarkOutline" />
+          <div class="card-main">
+            <div class="card-label">异常/错题</div>
+            <div class="card-value font-mono">{{ statistics.wrongCount }}</div>
+          </div>
+          <div class="card-footer">
+            ACTION REQUIRED
           </div>
         </div>
-      </n-grid-item>
+      </div>
+    </div>
 
-      <n-grid-item span="4 m:2 l:1">
-        <div class="stat-card purple-card">
-          <div class="stat-content">
-            <span class="stat-label">正确率</span>
-            <span class="stat-value">{{ statistics.correctRate }}%</span>
+    <!-- 3. Actions: Control Console -->
+    <div class="console-section">
+      <h3 class="section-label">CONTROL_CONSOLE // 操作台</h3>
+      <div class="control-panel">
+        <button class="industrial-btn btn-primary" @click="router.push('/practice')">
+          <div class="btn-content">
+            <span class="btn-icon">▶</span>
+            <div class="btn-text">
+              <span class="btn-title">启动随机测试</span>
+              <span class="btn-sub">INIT_RANDOM_TEST</span>
+            </div>
           </div>
-          <div class="stat-icon-bg">
-            <n-icon :component="StatsChartOutline" />
-          </div>
-        </div>
-      </n-grid-item>
-    </n-grid>
+          <div class="btn-shutter"></div>
+        </button>
 
-    <div class="section-title">快速开始</div>
-    <n-grid :x-gap="24" :y-gap="24" :cols="3" item-responsive responsive="screen">
-      <n-grid-item span="3 m:1">
-        <div class="action-card" @click="router.push('/practice')">
-          <div class="action-icon green">
-            <n-icon :component="PlayOutline" />
+        <button class="industrial-btn btn-warning" @click="router.push('/wrong-book')">
+          <div class="btn-content">
+            <span class="btn-icon">⚡</span>
+            <div class="btn-text">
+              <span class="btn-title">修复异常模块</span>
+              <span class="btn-sub">FIX_EXCEPTIONS</span>
+            </div>
           </div>
-          <div class="action-info">
-            <div class="action-title">随机练习</div>
-            <div class="action-desc">从题库中随机抽取题目，模拟真实考试环境</div>
-          </div>
-          <div class="action-arrow">→</div>
-        </div>
-      </n-grid-item>
-      
-      <n-grid-item span="3 m:1">
-        <div class="action-card" @click="router.push('/wrong-book')">
-          <div class="action-icon orange">
-            <n-icon :component="FlashOutline" />
-          </div>
-          <div class="action-info">
-            <div class="action-title">错题突击</div>
-            <div class="action-desc">专注于做错的题目，查漏补缺，巩固知识点</div>
-          </div>
-          <div class="action-arrow">→</div>
-        </div>
-      </n-grid-item>
+          <div class="stripe-bg"></div>
+        </button>
 
-      <n-grid-item span="3 m:1">
-        <div class="action-card" @click="router.push('/question-manage')">
-          <div class="action-icon blue">
-            <n-icon :component="CloudUploadOutline" />
+        <button class="industrial-btn btn-outline" @click="router.push('/question-manage')">
+          <div class="btn-content">
+            <span class="btn-icon">＋</span>
+            <div class="btn-text">
+              <span class="btn-title">注入新数据</span>
+              <span class="btn-sub">INJECT_DATA_STREAM</span>
+            </div>
           </div>
-          <div class="action-info">
-            <div class="action-title">导入题库</div>
-            <div class="action-desc">批量上传Excel文件，快速更新和扩展题库</div>
-          </div>
-          <div class="action-arrow">→</div>
-        </div>
-      </n-grid-item>
-    </n-grid>
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { NGrid, NGridItem, NIcon, useMessage } from 'naive-ui'
-import { 
-  ListOutline, CreateOutline, BookmarkOutline, StatsChartOutline, 
-  SchoolOutline, PlayOutline, FlashOutline, CloudUploadOutline 
-} from '@vicons/ionicons5'
+import { useMessage } from 'naive-ui'
 import { getStatistics } from '@/api/practice'
+import { useUserStore } from '@/stores/user'
 
+const userStore = useUserStore()
 const router = useRouter()
 const message = useMessage()
 
@@ -124,7 +149,6 @@ const statistics = ref({
   correctRate: 0
 })
 
-// 加载统计数据
 const loadStatistics = async () => {
   try {
     const res = await getStatistics()
@@ -146,239 +170,331 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.home-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding-bottom: 40px;
-}
-
-/* 欢迎区域 */
-.welcome-section {
-  background: linear-gradient(120deg, #10b981 0%, #059669 100%);
-  border-radius: 24px;
-  padding: 40px 48px;
-  color: white;
-  margin-bottom: 32px;
+/* Industrial/Brutalist Variables */
+.anti-home {
+  --neon-yellow: #F5E400;
+  --neon-cyan: #00E5FF;
+  --neon-magenta: #FF3EA5;
+  --void-black: #050505;
+  --off-white: #FFFDF7;
+  
+  font-family: 'Courier New', Courier, monospace; /* Fallback monospace */
+  min-height: 100vh;
+  padding: 40px 20px;
+  overflow-x: hidden;
+  color: var(--void-black);
   position: relative;
-  overflow: hidden;
-  box-shadow: 0 10px 30px -10px rgba(16, 185, 129, 0.4);
+
+  /* Inherit Background from Layout */
+  background: transparent;
 }
 
-.welcome-text {
+/* 1. Terminal Hero */
+.terminal-hero {
+  background: var(--void-black);
+  color: var(--neon-cyan);
+  border: 4px solid var(--void-black);
+  margin-bottom: 60px;
   position: relative;
-  z-index: 2;
+  z-index: 1;
+  box-shadow: 12px 12px 0px rgba(0,0,0,0.2);
 }
 
-.welcome-title {
-  font-size: 32px;
-  font-weight: 800;
-  margin-bottom: 12px;
-  letter-spacing: -0.5px;
+.terminal-header {
+  background: #1a1a1a;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #333;
+}
+.status-dot {
+  width: 12px; height: 12px;
+  background: var(--neon-cyan);
+  border-radius: 50%;
+}
+.blinking { animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+.terminal-title {
+  font-family: monospace;
+  font-size: 14px;
+  letter-spacing: 1px;
 }
 
-.welcome-subtitle {
-  font-size: 16px;
-  opacity: 0.9;
-  font-weight: 500;
-  max-width: 600px;
-}
-
-.wave {
-  display: inline-block;
-  animation: wave 2s infinite;
-  transform-origin: 70% 70%;
-}
-
-@keyframes wave {
-  0% { transform: rotate(0deg); }
-  10% { transform: rotate(14deg); }
-  20% { transform: rotate(-8deg); }
-  30% { transform: rotate(14deg); }
-  40% { transform: rotate(-4deg); }
-  50% { transform: rotate(10deg); }
-  60% { transform: rotate(0deg); }
-  100% { transform: rotate(0deg); }
-}
-
-.welcome-decoration {
-  position: absolute;
-  right: -20px;
-  bottom: -40px;
-  opacity: 0.15;
-  font-size: 200px;
-  transform: rotate(-15deg);
-  pointer-events: none;
-}
-
-/* 统计卡片 */
-.stats-grid {
-  margin-bottom: 40px;
-}
-
-.stat-card {
-  border-radius: 20px;
-  padding: 24px;
-  height: 140px;
+.terminal-body {
+  padding: 32px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.hero-title {
+  font-family: Impact, sans-serif;
+  font-size: 64px;
+  line-height: 0.9;
+  letter-spacing: -2px;
+  margin: 0 0 24px 0;
+  color: #fff;
+  text-transform: uppercase;
+}
+.user-highlight {
+  color: var(--neon-yellow);
+  background: var(--void-black);
+  padding: 0 4px;
+}
+
+.console-log {
+  font-family: monospace;
+  color: #888;
+  line-height: 1.6;
+}
+.highlight { color: var(--neon-cyan); }
+
+/* Integrity Bar */
+.integrity-monitor {
+  min-width: 300px;
+  border: 2px solid #333;
+  padding: 16px;
+  background: #0a0a0a;
+}
+.monitor-label {
+  font-size: 12px;
+  margin-bottom: 8px;
+  color: #666;
+}
+.progress-track {
+  height: 32px;
+  background: #222;
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(0,0,0,0.05);
 }
-
-.stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 30px -10px rgba(0,0,0,0.1);
+.progress-fill {
+  height: 100%;
+  width: var(--progress);
+  background: repeating-linear-gradient(
+    45deg,
+    var(--neon-magenta),
+    var(--neon-magenta) 10px,
+    #d90479 10px,
+    #d90479 20px
+  );
+  transition: width 1s ease-out;
 }
-
-.stat-content {
-  display: flex;
-  flex-direction: column;
+.progress-val {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #fff;
+  font-weight: bold;
+  font-family: monospace;
   z-index: 2;
+  mix-blend-mode: difference;
 }
 
-.stat-label {
+.decorative-tape {
+  position: absolute;
+  bottom: -15px;
+  right: -20px;
+  background: var(--neon-yellow);
+  color: var(--void-black);
+  padding: 5px 40px;
+  transform: rotate(-3deg);
+  font-weight: bold;
   font-size: 14px;
-  font-weight: 600;
-  color: #64748b;
-  margin-bottom: 8px;
-}
-
-.stat-value {
-  font-size: 36px;
-  font-weight: 800;
-  color: #1e293b;
-  letter-spacing: -1px;
-}
-
-.stat-icon-bg {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
+  border: 2px solid black;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
+  gap: 20px;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+}
+
+/* 2. Chaos Grid */
+.chaos-section { 
+  margin-bottom: 60px; 
+  position: relative; 
+  z-index: 1;
+}
+.section-label {
+  font-family: monospace;
+  font-size: 18px;
+  margin-bottom: 30px;
+  border-bottom: 3px solid var(--void-black);
+  display: inline-block;
+  padding-bottom: 4px;
+  
+  /* Readable BG for section label */
+  background: white; 
+  padding-left: 8px;
+  padding-right: 8px;
+  border: 2px solid black;
+  box-shadow: 4px 4px 0 black;
+}
+
+.chaos-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+  padding: 0 20px;
+}
+
+.chaos-card {
+  flex: 1;
+  min-width: 250px;
+  background: white;
+  border: 3px solid var(--void-black);
+  padding: 20px;
+  position: relative;
+  transition: transform 0.2s;
+}
+.chaos-card:hover { z-index: 10; transform: scale(1.05) rotate(0deg) !important; }
+.clicked-effect:active { transform: scale(0.98) rotate(0deg) !important; }
+
+/* Themes & Rotations */
+.card-yellow {
+  background: var(--neon-yellow);
+  transform: rotate(-2deg);
+  box-shadow: 8px 8px 0px var(--void-black);
+}
+.card-cyan {
+  background: var(--neon-cyan);
+  transform: rotate(1.5deg) translateY(10px);
+  box-shadow: 8px 8px 0px var(--void-black);
+}
+.card-magenta {
+  background: var(--neon-magenta);
+  color: white;
+  transform: rotate(-1deg) translateY(-5px);
+  box-shadow: 8px 8px 0px var(--void-black);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  font-family: monospace;
+  font-size: 12px;
+  opacity: 0.7;
+}
+.card-tag {
+  border: 1px solid currentColor;
+  padding: 0 4px;
+}
+
+.card-label {
+  font-weight: 800;
+  font-size: 18px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.card-value {
+  font-size: 48px;
+  font-weight: 900;
+  line-height: 1;
+}
+.font-mono { font-family: 'Courier New', monospace; }
+
+.card-screw {
+  width: 8px; height: 8px;
+  background: #333;
+  border-radius: 50%;
+  position: absolute;
+}
+.top-left { top: 8px; left: 8px; }
+.bottom-right { bottom: 8px; right: 8px; }
+
+.card-footer {
+  margin-top: 20px;
+  font-family: monospace;
+  font-size: 10px;
+  text-align: right;
   opacity: 0.8;
 }
 
-/* 卡片颜色主题 */
-.blue-card { background: #eff6ff; }
-.blue-card .stat-icon-bg { background: #dbeafe; color: #3b82f6; }
-.blue-card:hover { border-color: #bfdbfe; }
-
-.green-card { background: #f0fdf4; }
-.green-card .stat-icon-bg { background: #dcfce7; color: #10b981; }
-.green-card:hover { border-color: #bbf7d0; }
-
-.orange-card { background: #fff7ed; }
-.orange-card .stat-icon-bg { background: #ffedd5; color: #f97316; }
-.orange-card:hover { border-color: #fed7aa; }
-
-.purple-card { background: #faf5ff; }
-.purple-card .stat-icon-bg { background: #f3e8ff; color: #a855f7; }
-.purple-card:hover { border-color: #e9d5ff; }
-
-
-.section-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
+/* 3. Control Console */
+.control-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  position: relative;
+  z-index: 1;
 }
 
-.section-title::before {
-  content: '';
-  display: block;
-  width: 4px;
-  height: 20px;
-  background: #10b981;
-  border-radius: 2px;
-  margin-right: 12px;
-}
-
-/* 快捷入口 */
-.action-card {
+.industrial-btn {
+  position: relative;
   background: white;
-  border-radius: 20px;
+  border: 3px solid var(--void-black);
   padding: 24px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
   cursor: pointer;
-  border: 1px solid #f1f5f9;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
-  transition: all 0.3s ease;
+  text-align: left;
+  transition: transform 0.1s;
+  overflow: hidden;
+  box-shadow: 6px 6px 0px var(--void-black);
+}
+.industrial-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 2px 2px 0px var(--void-black);
 }
 
-.action-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05), 0 10px 10px -5px rgba(0,0,0,0.02);
-  border-color: #e2e8f0;
-}
-
-.action-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
+.btn-content {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  color: white;
-  flex-shrink: 0;
-  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+  gap: 16px;
 }
-
-.action-icon.green { background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3); }
-.action-icon.orange { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); box-shadow: 0 10px 15px -3px rgba(249, 115, 22, 0.3); }
-.action-icon.blue { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3); }
-
-.action-info {
-  flex: 1;
+.btn-icon {
+  font-size: 32px;
 }
-
-.action-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 4px;
-}
-
-.action-desc {
-  font-size: 13px;
-  color: #64748b;
-  line-height: 1.4;
-}
-
-.action-arrow {
+.btn-title {
+  display: block;
+  font-weight: 900;
   font-size: 20px;
-  color: #cbd5e1;
-  font-weight: bold;
-  transition: all 0.3s;
+  text-transform: uppercase;
+}
+.btn-sub {
+  display: block;
+  font-family: monospace;
+  font-size: 12px;
+  margin-top: 4px;
+  color: #666;
 }
 
-.action-card:hover .action-arrow {
-  transform: translateX(4px);
-  color: #1e293b;
+/* Button Variants */
+.btn-primary:hover { background: var(--neon-cyan); }
+.btn-warning { background: #fff; }
+.btn-warning:hover .stripe-bg { opacity: 0.2; }
+.stripe-bg {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    #000,
+    #000 10px,
+    var(--neon-yellow) 10px,
+    var(--neon-yellow) 20px
+  );
+  opacity: 0.05;
+  transition: opacity 0.2s;
 }
 
-/* 响应式调整 */
+.btn-outline {
+  background: transparent;
+  border-style: dashed;
+}
+.btn-outline:hover {
+  background: var(--void-black);
+  color: white;
+}
+.btn-outline:hover .btn-sub { color: #aaa; }
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .welcome-section {
-    padding: 32px;
-  }
-  .welcome-title {
-    font-size: 24px;
-  }
-  .welcome-decoration {
-    font-size: 150px;
-    right: -40px;
-  }
+  .hero-title { font-size: 42px; }
+  .chaos-grid { flex-direction: column; gap: 30px; }
+  .chaos-card { transform: none !important; width: 100%; }
+  .control-panel { grid-template-columns: 1fr; }
 }
 </style>
