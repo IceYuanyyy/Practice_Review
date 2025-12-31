@@ -272,6 +272,7 @@ const parseQuestionText = (content) => {
         num: parseInt(questionMatch[1]),
         content: questionMatch[2].trim(),
         options: {},
+        analysis: '', // 新增：解析字段
         subject: subjectName.value || '未分类',
         difficulty: 'medium'
       }
@@ -286,6 +287,12 @@ const parseQuestionText = (content) => {
       if (value) {
         currentQuestion.options[key] = value
       }
+    }
+    
+    // 匹配解析（答案解析：... 或 解析：...）
+    const analysisMatch = line.match(/^(?:答案)?解析[：:]\s*(.+)/)
+    if (analysisMatch && currentQuestion) {
+      currentQuestion.analysis = analysisMatch[1].trim()
     }
   }
   
@@ -345,8 +352,8 @@ const convertToExcel = () => {
         q.options['D'] || '',
         q.options['E'] || '',
         answers[q.num] || '',
-        '',
-        subjectName.value || '未分类', // 使用用户输入的科目
+        q.analysis || '', // 使用解析后的 analysis
+        subjectName.value || '未分类',
         q.difficulty
       ])
     }
@@ -379,7 +386,7 @@ const convertToExcel = () => {
         judgeData.push([
           q.content,
           answer,
-          '',
+          q.analysis || '', // 使用解析后的 analysis
           subjectName.value || '未分类',
           q.difficulty
         ])

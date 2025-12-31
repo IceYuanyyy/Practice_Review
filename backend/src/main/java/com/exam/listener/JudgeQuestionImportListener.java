@@ -125,7 +125,11 @@ public class JudgeQuestionImportListener extends AnalysisEventListener<JudgeQues
         }
         question.setAnswer(answer);
         
-        question.setAnalysis(dto.getAnalysis());
+        if (dto.getAnalysis() != null && !dto.getAnalysis().trim().isEmpty()) {
+            question.setAnalysis(dto.getAnalysis());
+        } else {
+            question.setAnalysis("暂无详细解析，请参考正确答案进行复习。");
+        }
         
         // 如果有自定义科目，使用自定义科目；否则使用Excel中的科目
         if (customSubject != null && !customSubject.trim().isEmpty()) {
