@@ -56,4 +56,9 @@ public interface SubjectService extends IService<Subject> {
      * 重新统计所有科目的题目数量
      */
     void recountAllSubjects();
+
+    /**
+     * 清理没有题目的科目
+     */
+    void removeEmptySubjects();
 }

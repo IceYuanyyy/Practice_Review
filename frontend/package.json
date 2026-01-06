@@ -11,10 +11,12 @@
   "dependencies": {
     "@vicons/ionicons5": "^0.12.0",
     "axios": "^1.6.2",
+    "echarts": "^6.0.0",
     "naive-ui": "^2.38.1",
     "pinia": "^2.1.7",
     "pinia-plugin-persistedstate": "^3.2.1",
     "vue": "^3.4.0",
+    "vue-echarts": "^8.0.1",
     "vue-router": "^4.2.5",
     "xlsx": "^0.18.5"
   },

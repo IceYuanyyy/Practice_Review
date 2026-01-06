@@ -230,6 +230,15 @@ public class AdminController {
         return Result.success(pageResult);
     }
 
+    /**
+     * 删除操作日志
+     */
+    @DeleteMapping("/operation-logs/{id}")
+    public Result<String> deleteOperationLog(@PathVariable Long id) {
+        boolean success = operationLogMapper.deleteById(id) > 0;
+        return success ? Result.success("删除成功") : Result.error("删除失败");
+    }
+
     // ==================== 用户题库统计接口 ====================
 
     /**

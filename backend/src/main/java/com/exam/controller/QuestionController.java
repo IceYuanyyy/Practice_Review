@@ -36,6 +36,9 @@ public class QuestionController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private com.exam.service.SubjectService subjectService;
+
     /**
      * 获取当前登录用户ID
      */
@@ -68,16 +71,21 @@ public class QuestionController {
             @RequestParam(defaultValue = "10") Long size,
             @RequestParam(required = false) String subject,
             @RequestParam(required = false) String type,
-            @RequestParam(required = false) String difficulty) {
+            @RequestParam(required = false) String difficulty,
+            @RequestParam(required = false) Long importLogId) {
         
         Long userId = getCurrentUserId();
+        boolean isAdmin = isAdmin();
         
-        // 构建查询条件：当前用户的题目 + 公共题库（owner_id IS NULL）
         Page<Question> questionPage = new Page<>(page, size);
         QueryWrapper<Question> wrapper = new QueryWrapper<>();
         
-        // 用户隔离：只能看到自己的题目和公共题库
-        wrapper.and(w -> w.isNull("owner_id").or().eq("owner_id", userId));
+        // 权限控制
+        if (!isAdmin) {
+            // 普通用户：只能看到自己的题目和公共题库
+            wrapper.and(w -> w.isNull("owner_id").or().eq("owner_id", userId));
+        }
+        // 管理员：可以看到所有题目（无需额外过滤条件）
         
         // 筛选条件
         if (subject != null && !subject.isEmpty()) {
@@ -89,16 +97,42 @@ public class QuestionController {
         if (difficulty != null && !difficulty.isEmpty()) {
             wrapper.eq("difficulty", difficulty);
         }
+        if (importLogId != null) {
+            wrapper.eq("import_log_id", importLogId);
+        }
         
         wrapper.orderByAsc("type", "display_order");
         questionService.page(questionPage, wrapper);
         
-        // 为每道题设置当前用户的统计数据
+        // 收集所有题目拥有者的ID
+        List<Long> ownerIds = questionPage.getRecords().stream()
+                .map(Question::getOwnerId)
+                .filter(id -> id != null)
+                .distinct()
+                .collect(java.util.stream.Collectors.toList());
+                
+        // 批量查询用户名
+        java.util.Map<Long, String> userMap = new java.util.HashMap<>();
+        if (!ownerIds.isEmpty()) {
+            List<User> users = userService.listByIds(ownerIds);
+            for (User user : users) {
+                userMap.put(user.getId(), user.getUsername());
+            }
+        }
+        
+        // 为每道题设置统计数据和拥有者名称
         for (Question q : questionPage.getRecords()) {
             int wrongCount = userQuestionStatsService.getWrongCount(userId, q.getId());
             boolean isMarked = userQuestionStatsService.isMarked(userId, q.getId());
             q.setWrongCount(wrongCount);
             q.setIsMarked(isMarked);
+            
+            // 设置拥有者名称
+            if (q.getOwnerId() != null) {
+                q.setOwnerName(userMap.getOrDefault(q.getOwnerId(), "未知用户"));
+            } else {
+                q.setOwnerName("公共题库");
+            }
         }
         
         PageResult<Question> pageResult = new PageResult<>(
@@ -249,32 +283,42 @@ public class QuestionController {
     }
 
     /**
-     * 清空题库 - 清空当前用户可见的题目
+     * 清空题库 - 清空题目
      * 普通用户：只能清空自己的题目
-     * 管理员：可以清空自己的题目 + 公共题库
+     * 管理员：可以清空所有用户的题目（包括公共题库），并可按用户ID筛选
      * 
      * @param subject 科目（可选）
      * @param type 题型（可选）
+     * @param importLogId 导入日志ID（可选）
+     * @param ownerId 题目所有者ID（可选，仅管理员可用）
      * @return 操作结果
      */
     @DeleteMapping("/clear")
     public Result<String> clearAllQuestions(
             @RequestParam(required = false) String subject,
-            @RequestParam(required = false) String type) {
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) Long importLogId,
+            @RequestParam(required = false) Long ownerId) {
         
         Long userId = getCurrentUserId();
         boolean admin = isAdmin();
         
-        // 构建查询条件：当前用户的题目 + 公共题库（管理员可清空公共题库）
+        // 构建查询条件
         QueryWrapper<Question> wrapper = new QueryWrapper<>();
         
-        if (admin) {
-            // 管理员可以清空自己的题目和公共题库
-            wrapper.and(w -> w.isNull("owner_id").or().eq("owner_id", userId));
-        } else {
+        if (!admin) {
             // 普通用户只能清空自己的题目
             wrapper.eq("owner_id", userId);
+        } else if (ownerId != null) {
+            // 管理员可以按指定用户ID筛选（包括 null 表示公共题库）
+            if (ownerId == -1) {
+                // -1 表示公共题库（owner_id IS NULL）
+                wrapper.isNull("owner_id");
+            } else {
+                wrapper.eq("owner_id", ownerId);
+            }
         }
+        // 管理员未指定 ownerId 时可以清空所有题目（不添加 owner_id 过滤条件）
         
         if (subject != null && !subject.isEmpty()) {
             wrapper.eq("subject", subject);
@@ -282,9 +326,18 @@ public class QuestionController {
         if (type != null && !type.isEmpty()) {
             wrapper.eq("type", type);
         }
+        if (importLogId != null) {
+            wrapper.eq("import_log_id", importLogId);
+        }
         
         long count = questionService.count(wrapper);
         questionService.remove(wrapper);
+        
+        // 同步清理科目表
+        // 1. 重新统计所有科目数量
+        subjectService.recountAllSubjects();
+        // 2. 清理空的科目
+        subjectService.removeEmptySubjects();
         
         String msg = count > 0 ? String.format("成功清空 %d 道题目", count) : "没有符合条件的题目";
         return Result.success(msg);

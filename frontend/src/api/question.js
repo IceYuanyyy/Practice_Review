@@ -108,10 +108,14 @@ export function importExcel(file, subject) {
 /**
  * 导出 Excel
  */
-export function exportExcel() {
+/**
+ * 导出 Excel
+ */
+export function exportExcel(params) {
   return request({
     url: '/import/export',
     method: 'get',
-    responseType: 'blob'
+    responseType: 'blob',
+    params
   })
 }

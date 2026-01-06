@@ -84,6 +84,17 @@ public class Question {
     private Integer practiceCount;
 
     /**
+     * 关联的导入日志ID
+     */
+    private Long importLogId;
+
+    /**
+     * 题目所属用户名称（非数据库字段，用于前端显示）
+     */
+    @TableField(exist = false)
+    private String ownerName;
+
+    /**
      * 创建时间
      */
     @TableField(fill = FieldFill.INSERT)

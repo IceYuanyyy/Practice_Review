@@ -180,6 +180,7 @@ public class PracticeController {
 
     /**
      * 获取统计数据 - 按当前用户统计
+     * 包含基础统计、科目/题型/难度分布、最近练习趋势
      * 
      * @return 统计信息
      */
@@ -220,6 +221,71 @@ public class PracticeController {
         // 错题数（当前用户）
         List<Long> wrongIds = userQuestionStatsService.getWrongQuestionIds(userId);
         dto.setWrongQuestionCount((long) wrongIds.size());
+        
+        // 收藏题目数（当前用户）
+        List<Long> markedIds = userQuestionStatsService.getMarkedQuestionIds(userId);
+        dto.setMarkedQuestionCount((long) markedIds.size());
+        
+        // === 分布统计（基于用户可见题目） ===
+        List<Question> visibleQuestions = questionService.list(
+            new QueryWrapper<Question>().isNull("owner_id").or().eq("owner_id", userId)
+        );
+        
+        // 科目分布
+        Map<String, Long> subjectDist = visibleQuestions.stream()
+            .collect(java.util.stream.Collectors.groupingBy(
+                q -> q.getSubject() != null ? q.getSubject() : "未分类",
+                java.util.stream.Collectors.counting()
+            ));
+        dto.setSubjectDistribution(subjectDist);
+        
+        // 题型分布（转换为中文显示）
+        Map<String, Long> typeDist = visibleQuestions.stream()
+            .collect(java.util.stream.Collectors.groupingBy(
+                q -> {
+                    String type = q.getType();
+                    if ("single-choice".equals(type)) return "单选题";
+                    if ("multiple-choice".equals(type)) return "多选题";
+                    if ("judge".equals(type)) return "判断题";
+                    return type != null ? type : "其他";
+                },
+                java.util.stream.Collectors.counting()
+            ));
+        dto.setTypeDistribution(typeDist);
+        
+        // 难度分布（转换为中文显示）
+        Map<String, Long> diffDist = visibleQuestions.stream()
+            .collect(java.util.stream.Collectors.groupingBy(
+                q -> {
+                    String diff = q.getDifficulty();
+                    if ("easy".equals(diff)) return "简单";
+                    if ("medium".equals(diff)) return "中等";
+                    if ("hard".equals(diff)) return "困难";
+                    return diff != null ? diff : "未设置";
+                },
+                java.util.stream.Collectors.counting()
+            ));
+        dto.setDifficultyDistribution(diffDist);
+        
+        // 最近7天练习趋势
+        List<Map<String, Object>> recentPractice = new java.util.ArrayList<>();
+        java.time.LocalDate today = java.time.LocalDate.now();
+        for (int i = 6; i >= 0; i--) {
+            java.time.LocalDate date = today.minusDays(i);
+            String dateStr = date.format(java.time.format.DateTimeFormatter.ofPattern("MM-dd"));
+            
+            // 查询该日期的练习次数
+            QueryWrapper<PracticeRecord> dayWrapper = new QueryWrapper<>();
+            dayWrapper.eq("user_id", userId)
+                     .apply("DATE(practice_time) = {0}", date.toString());
+            long dayCount = practiceRecordService.count(dayWrapper);
+            
+            Map<String, Object> dayData = new HashMap<>();
+            dayData.put("date", dateStr);
+            dayData.put("count", dayCount);
+            recentPractice.add(dayData);
+        }
+        dto.setRecentPractice(recentPractice);
         
         return Result.success(dto);
     }

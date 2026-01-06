@@ -144,6 +144,16 @@
               :options="typeOptions"
             />
           </n-form-item>
+
+          <n-form-item v-if="clearOptions.mode === 'custom'" label="选择用户">
+            <n-select
+              v-model:value="clearOptions.ownerId"
+              placeholder="请选择用户"
+              clearable
+              :options="userOptions"
+              :loading="loadingUsers"
+            />
+          </n-form-item>
         </n-form>
 
         <n-card v-if="clearPreview" size="small" :bordered="false" class="preview-card">
@@ -289,6 +299,7 @@ import {
 } from '@vicons/ionicons5'
 import { getQuestionList, addQuestion, updateQuestion, deleteQuestion, importExcel, exportExcel, batchDeleteQuestions, clearAllQuestions } from '@/api/question'
 import { getAllSubjects } from '@/api/subject'
+import { getAllUsers } from '@/api/user'
 
 const message = useMessage()
 const loading = ref(false)
@@ -299,12 +310,15 @@ const importSubject = ref('')
 const editingQuestion = ref(null)
 const formRef = ref(null)
 const checkedRowKeys = ref([])
+const loadingUsers = ref(false)
+const userOptions = ref([])
 
 // 清空选项
 const clearOptions = reactive({
   mode: 'all',
   subject: null,
-  type: null
+  type: null,
+  ownerId: null
 })
 
 const clearPreview = computed(() => {
@@ -333,6 +347,12 @@ const clearPreview = computed(() => {
       }
       const typeName = typeNameMap[clearOptions.type] || clearOptions.type
       parts.push(`题型:${typeName}`)
+    }
+    if (clearOptions.ownerId !== null && clearOptions.ownerId !== undefined) {
+      const user = userOptions.value.find(u => u.value === clearOptions.ownerId)
+      if (user) {
+        parts.push(`用户:${user.label}`)
+      }
     }
     return parts.length > 0 ? `将清空 ${parts.join('，')} 的题目` : '请选择清空条件'
   }
@@ -430,6 +450,28 @@ const loadSubjects = async () => {
   }
 }
 
+// 加载用户列表（仅管理员）
+const loadUsers = async () => {
+  loadingUsers.value = true
+  try {
+    const res = await getAllUsers()
+    if (res.code === 200 && res.data) {
+      userOptions.value = [
+        { label: '公共题库', value: -1 },
+        ...res.data.map(user => ({
+          label: `${user.username} (${user.nickname || '无昵称'})`,
+          value: user.id
+        }))
+      ]
+    }
+  } catch (error) {
+    console.error('加载用户列表失败', error)
+    // 非管理员会失败，静默处理
+  } finally {
+    loadingUsers.value = false
+  }
+}
+
 const typeOptions = [
   { label: '单选题', value: 'single-choice' },
   { label: '多选题', value: 'multiple-choice' },
@@ -470,6 +512,23 @@ const columns = [
     key: 'subject', 
     width: 120,
     render: (row) => h(NTag, { size: 'small', bordered: true, style: { color: '#666' } }, { default: () => row.subject }) 
+  },
+  {
+    title: '导入者',
+    key: 'ownerName',
+    width: 100,
+    align: 'center',
+    render: (row) => h(NTag, { type: 'info', size: 'small', bordered: false }, { default: () => row.ownerName || '未知' })
+  },
+  {
+    title: '导入时间',
+    key: 'createTime',
+    width: 160,
+    align: 'center',
+    render: (row) => {
+        if (!row.createTime) return '-'
+        return row.createTime.replace('T', ' ').substring(0, 19)
+    }
   },
   { 
      title: '题目内容', 
@@ -741,6 +800,9 @@ const confirmClear = async () => {
         params.type = clearOptions.type
       }
     }
+    if (clearOptions.mode === 'custom' && clearOptions.ownerId !== null && clearOptions.ownerId !== undefined) {
+      params.ownerId = clearOptions.ownerId
+    }
     
     const res = await clearAllQuestions(params)
     message.success(res.data)
@@ -750,6 +812,7 @@ const confirmClear = async () => {
     clearOptions.mode = 'all'
     clearOptions.subject = null
     clearOptions.type = null
+    clearOptions.ownerId = null
     
     checkedRowKeys.value = []
     loadQuestions()
@@ -760,6 +823,7 @@ const confirmClear = async () => {
 
 onMounted(() => {
   loadSubjects()
+  loadUsers()
   loadQuestions()
 })
 </script>

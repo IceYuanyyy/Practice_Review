@@ -34,6 +34,11 @@ request.interceptors.response.use(
   (response) => {
     const res = response.data
 
+    // 如果是二进制数据（Blob），直接返回
+    if (response.config.responseType === 'blob' || response.data instanceof Blob) {
+      return response.data
+    }
+
     // 如果返回的状态码不是 200，则认为是错误
     if (res.code !== 200) {
       // 特殊处理 Token 失效的情况

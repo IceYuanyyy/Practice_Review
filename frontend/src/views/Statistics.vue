@@ -9,71 +9,101 @@
     <div class="kpi-section">
       <div class="sketch-card kpi-card">
         <div class="kpi-title">总练习数 <div class="wavy-line"></div></div>
-        <div class="kpi-value">{{ practiceStore.totalPracticeCount }}</div>
+        <div class="kpi-value">{{ stats.totalPracticeCount || 0 }}</div>
         <div class="kpi-icon"><n-icon :component="SchoolOutline" /></div>
       </div>
 
       <div class="sketch-card kpi-card">
-        <div class="kpi-title">正确数 <div class="wavy-line"></div></div>
-        <div class="kpi-value green">{{ practiceStore.correctCount }}</div>
+        <div class="kpi-title">已练题目 <div class="wavy-line"></div></div>
+        <div class="kpi-value green">{{ stats.practicedQuestionCount || 0 }}</div>
         <div class="kpi-icon"><n-icon :component="CheckmarkCircleOutline" /></div>
       </div>
 
       <div class="sketch-card kpi-card">
-        <div class="kpi-title">错误数 <div class="wavy-line"></div></div>
-        <div class="kpi-value red">{{ practiceStore.wrongCount }}</div>
+        <div class="kpi-title">错题数 <div class="wavy-line"></div></div>
+        <div class="kpi-value red">{{ stats.wrongQuestionCount || 0 }}</div>
         <div class="kpi-icon"><n-icon :component="CloseCircleOutline" /></div>
       </div>
 
       <div class="sketch-card kpi-card">
         <div class="kpi-title">正确率 <div class="wavy-line"></div></div>
-        <div class="kpi-value orange">{{ practiceStore.correctRate }}<span class="unit">%</span></div>
+        <div class="kpi-value orange">{{ stats.correctRate || 0 }}<span class="unit">%</span></div>
         <div class="kpi-icon"><n-icon :component="StatsChartOutline" /></div>
       </div>
     </div>
 
-    <!-- 连接箭头 (SVG) -->
-    <div class="arrow-container">
-       <svg class="connect-arrow" viewBox="0 0 100 50">
-         <path d="M10 10 Q 50 40 90 10" fill="none" stroke="#64748b" stroke-width="2" stroke-dasharray="5,5" />
-         <path d="M90 10 L 80 5 M 90 10 L 80 15" fill="none" stroke="#64748b" stroke-width="2" />
-       </svg>
+    <!-- ECharts 图表区域 -->
+    <div class="charts-section">
+      <!-- 科目分布饼图 -->
+      <div class="sketch-box chart-box">
+        <div class="box-header">
+          <span class="highlight-title">科目分布</span>
+        </div>
+        <v-chart class="chart" :option="subjectChartOption" autoresize />
+      </div>
+
+      <!-- 题型分布饼图 -->
+      <div class="sketch-box chart-box">
+        <div class="box-header">
+          <span class="highlight-title">题型分布</span>
+        </div>
+        <v-chart class="chart" :option="typeChartOption" autoresize />
+      </div>
+
+      <!-- 难度分布柱状图 -->
+      <div class="sketch-box chart-box">
+        <div class="box-header">
+          <span class="highlight-title">难度分布</span>
+        </div>
+        <v-chart class="chart" :option="difficultyChartOption" autoresize />
+      </div>
+
+      <!-- 练习趋势折线图 -->
+      <div class="sketch-box chart-box">
+        <div class="box-header">
+          <span class="highlight-title">最近7天练习趋势</span>
+        </div>
+        <v-chart class="chart" :option="trendChartOption" autoresize />
+      </div>
     </div>
 
+    <!-- 练习历史记录区域 -->
     <div class="dashboard-content">
       <!-- 历史记录 -->
       <div class="sketch-box history-box">
         <div class="box-header">
-           <span class="highlight-title">最近练习记录</span>
-           <n-button text class="clear-text-btn" @click="clearHistory">
-             <template #icon><n-icon :component="TrashOutline"/></template>
-             清空记录
-           </n-button>
+          <span class="highlight-title">最近练习记录</span>
+          <n-button text class="clear-text-btn" @click="clearHistory">
+            <template #icon><n-icon :component="TrashOutline"/></template>
+            清空记录
+          </n-button>
         </div>
 
         <div class="history-list-container">
           <n-empty v-if="practiceStore.practiceHistory.length === 0" description="暂无记录" class="empty-state">
-             <template #icon>
-                <div class="empty-doodle">
-                  <n-icon :component="DocumentTextOutline" size="48" />
-                </div>
-             </template>
-             <n-button text class="link-btn" @click="router.push('/practice')">去练习 &rarr;</n-button>
+            <template #icon>
+              <div class="empty-doodle">
+                <n-icon :component="DocumentTextOutline" size="48" />
+              </div>
+            </template>
+            <n-button text class="link-btn" @click="router.push('/practice')">去练习 &rarr;</n-button>
           </n-empty>
 
           <div v-else class="hand-list">
-             <div v-for="(record, index) in paginatedRecords" :key="index" class="hand-item">
-               <div class="item-status">
-                 <span class="status-dot" :class="{ correct: record.isCorrect }"></span>
-               </div>
-               <div class="item-content">
-                 <div class="item-q">{{ record.question }}</div>
-                 <div class="item-meta">
-                   <span class="item-time">{{ formatTime(record.timestamp) }}</span>
-                   <span class="item-ans">你选了: <span :class="record.isCorrect ? 'green-text' : 'red-text'">{{ record.userAnswer || '-' }}</span></span>
-                 </div>
-               </div>
-             </div>
+            <div v-for="(record, index) in paginatedRecords" :key="index" class="hand-item">
+              <div class="item-status">
+                <span class="status-icon" :class="record.isCorrect ? 'correct' : 'wrong'">
+                  {{ record.isCorrect ? '✔' : '❌' }}
+                </span>
+              </div>
+              <div class="item-content">
+                <div class="item-q">{{ formatQuestion(record.question) }}</div>
+                <div class="item-meta">
+                  <span class="item-time">{{ formatTime(record.timestamp) }}</span>
+                  <span class="item-ans">你选了: <span :class="record.isCorrect ? 'green-text' : 'red-text'">{{ record.userAnswer || '-' }}</span></span>
+                </div>
+              </div>
+            </div>
           </div>
           
           <!-- 分页组件 -->
@@ -86,23 +116,23 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- 学习建议 (便利贴/撕纸效果) -->
-      <div class="advice-section">
-        <div class="torn-paper">
-          <div class="paper-top"></div>
-          <div class="paper-content">
-             <h3 class="advice-title">
-               <n-icon :component="BulbOutline" color="#f59e0b" />
-               学习小建议
-             </h3>
-             <ul class="hand-ul">
-               <li>保持每天练习的习惯，哪怕只做 5 道题。</li>
-               <li>错题不要只需记住答案，理解背后的知识点更重要。</li>
-               <li>正确率超过 80% 时，可以尝试挑战更高难度的题目。</li>
-               <li>休息也很重要，劳逸结合效率更高！</li>
-             </ul>
-          </div>
+    <!-- 学习建议 (便利贴/撕纸效果) -->
+    <div class="advice-section">
+      <div class="torn-paper">
+        <div class="paper-top"></div>
+        <div class="paper-content">
+          <h3 class="advice-title">
+            <n-icon :component="BulbOutline" color="#f59e0b" />
+            学习小建议
+          </h3>
+          <ul class="hand-ul">
+            <li>保持每天练习的习惯，哪怕只做 5 道题。</li>
+            <li>错题不要只需记住答案，理解背后的知识点更重要。</li>
+            <li>正确率超过 80% 时，可以尝试挑战更高难度的题目。</li>
+            <li>休息也很重要，劳逸结合效率更高！</li>
+          </ul>
         </div>
       </div>
     </div>
@@ -110,16 +140,39 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   NIcon, NButton, NEmpty, NPagination, useDialog, useMessage
 } from 'naive-ui'
 import {
   SchoolOutline, CheckmarkCircleOutline, CloseCircleOutline,
-  StatsChartOutline, DocumentTextOutline, TrashOutline, BulbOutline
+  StatsChartOutline, BulbOutline, DocumentTextOutline, TrashOutline
 } from '@vicons/ionicons5'
+import { use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
+import { PieChart, BarChart, LineChart } from 'echarts/charts'
+import {
+  TitleComponent,
+  TooltipComponent,
+  LegendComponent,
+  GridComponent
+} from 'echarts/components'
+import VChart from 'vue-echarts'
+import { getStatistics } from '@/api/practice'
 import { usePracticeStore } from '@/stores/practice'
+
+// 注册 ECharts 组件
+use([
+  CanvasRenderer,
+  PieChart,
+  BarChart,
+  LineChart,
+  TitleComponent,
+  TooltipComponent,
+  LegendComponent,
+  GridComponent
+])
 
 const router = useRouter()
 const dialog = useDialog()
@@ -146,6 +199,12 @@ const formatTime = (timestamp) => {
   return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`
 }
 
+const formatQuestion = (question) => {
+  if (!question) return ''
+  // Remove leading empty parentheses like ( ) or （ ）
+  return question.replace(/^[\(（]\s*[\)）]\s*/, '')
+}
+
 const clearHistory = () => {
   dialog.warning({
     title: '擦除记录',
@@ -158,11 +217,169 @@ const clearHistory = () => {
     }
   })
 }
+
+
+const stats = ref({
+  totalQuestions: 0,
+  practicedQuestionCount: 0,
+  totalPracticeCount: 0,
+  wrongQuestionCount: 0,
+  correctRate: '0',
+  markedQuestionCount: 0,
+  subjectDistribution: {},
+  typeDistribution: {},
+  difficultyDistribution: {},
+  recentPractice: []
+})
+
+// 科目分布饼图配置
+const subjectChartOption = computed(() => ({
+  tooltip: {
+    trigger: 'item',
+    formatter: '{b}: {c} 题 ({d}%)'
+  },
+  legend: {
+    orient: 'vertical',
+    left: 'left'
+  },
+  series: [
+    {
+      name: '科目分布',
+      type: 'pie',
+      radius: '50%',
+      data: Object.entries(stats.value.subjectDistribution || {}).map(([name, value]) => ({
+        name,
+        value
+      })),
+      emphasis: {
+        itemStyle: {
+          shadowBlur: 10,
+          shadowOffsetX: 0,
+          shadowColor: 'rgba(0, 0, 0, 0.5)'
+        }
+      }
+    }
+  ]
+}))
+
+// 题型分布饼图配置
+const typeChartOption = computed(() => ({
+  tooltip: {
+    trigger: 'item',
+    formatter: '{b}: {c} 题 ({d}%)'
+  },
+  legend: {
+    orient: 'vertical',
+    left: 'left'
+  },
+  series: [
+    {
+      name: '题型分布',
+      type: 'pie',
+      radius: '50%',
+      data: Object.entries(stats.value.typeDistribution || {}).map(([name, value]) => ({
+        name,
+        value
+      })),
+      emphasis: {
+        itemStyle: {
+          shadowBlur: 10,
+          shadowOffsetX: 0,
+          shadowColor: 'rgba(0, 0, 0, 0.5)'
+        }
+      }
+    }
+  ]
+}))
+
+// 难度分布柱状图配置
+const difficultyChartOption = computed(() => ({
+  tooltip: {
+    trigger: 'axis',
+    axisPointer: {
+      type: 'shadow'
+    }
+  },
+  xAxis: {
+    type: 'category',
+    data: Object.keys(stats.value.difficultyDistribution || {})
+  },
+  yAxis: {
+    type: 'value'
+  },
+  series: [
+    {
+      name: '题目数',
+      type: 'bar',
+      data: Object.values(stats.value.difficultyDistribution || {}),
+      itemStyle: {
+        color: '#60a5fa'
+      }
+    }
+  ]
+}))
+
+// 练习趋势折线图配置
+const trendChartOption = computed(() => ({
+  tooltip: {
+    trigger: 'axis'
+  },
+  xAxis: {
+    type: 'category',
+    data: (stats.value.recentPractice || []).map(item => item.date)
+  },
+  yAxis: {
+    type: 'value'
+  },
+  series: [
+    {
+      name: '练习次数',
+      type: 'line',
+      data: (stats.value.recentPractice || []).map(item => item.count),
+      smooth: true,
+      itemStyle: {
+        color: '#34d399'
+      },
+      areaStyle: {
+        color: {
+          type: 'linear',
+          x: 0,
+          y: 0,
+          x2: 0,
+          y2: 1,
+          colorStops: [
+            { offset: 0, color: 'rgba(52, 211, 153, 0.3)' },
+            { offset: 1, color: 'rgba(52, 211, 153, 0.05)' }
+          ]
+        }
+      }
+    }
+  ]
+}))
+
+// 加载统计数据
+const loadStatistics = async () => {
+  try {
+    const res = await getStatistics()
+    if (res.code === 200) {
+      stats.value = res.data
+    } else {
+      message.error(res.message || '加载统计数据失败')
+    }
+  } catch (error) {
+    console.error('加载统计数据失败:', error)
+    message.error('加载统计数据失败')
+  }
+}
+
+onMounted(() => {
+  loadStatistics()
+})
 </script>
 
 <style scoped>
 .stats-dashboard {
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 30px 20px 60px;
   font-family: 'Patrick Hand', cursive;
@@ -185,7 +402,7 @@ const clearHistory = () => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 24px;
-  margin-bottom: 10px;
+  margin-bottom: 40px;
 }
 
 .sketch-card {
@@ -218,7 +435,7 @@ const clearHistory = () => {
   font-family: 'Gochi Hand', cursive;
   font-size: 48px;
   line-height: 1;
-  color: #2c3e50; /* Ink color */
+  color: #2c3e50;
 }
 .kpi-value.green { color: #16a34a; }
 .kpi-value.red { color: #ef4444; }
@@ -234,33 +451,24 @@ const clearHistory = () => {
   color: #2c3e50;
 }
 
-/* Connect Arrow */
-.arrow-container {
-  height: 50px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 10px;
-}
-.connect-arrow { width: 100px; height: 50px; opacity: 0.6; }
-
-/* Dashboard Content Grid */
-.dashboard-content {
+/* Charts Section */
+.charts-section {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 32px;
-}
-@media (max-width: 768px) {
-  .dashboard-content { grid-template-columns: 1fr; }
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
 }
 
-/* History Box */
 .sketch-box {
   background: #fff;
   border: 2px solid #2c3e50;
   border-radius: 12px 20px 15px 25px;
   padding: 24px;
   box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
+}
+
+.chart-box {
+  min-height: 350px;
 }
 
 .box-header {
@@ -278,12 +486,20 @@ const clearHistory = () => {
   border-radius: 4px;
 }
 
-.clear-text-btn {
-  font-family: 'Patrick Hand', cursive;
-  font-size: 16px;
-  color: #94a3b8;
+.chart {
+  width: 100%;
+  height: 300px;
 }
-.clear-text-btn:hover { color: #ef4444; text-decoration: underline; }
+
+/* Dashboard Content Grid */
+.dashboard-content {
+  margin-bottom: 40px;
+}
+
+/* History Box */
+.history-box {
+  width: 100%;
+}
 
 .history-list-container { min-height: 200px; }
 
@@ -297,25 +513,22 @@ const clearHistory = () => {
 }
 .hand-item:last-child { border-bottom: none; }
 
-.status-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #ef4444;
-  margin-top: 6px;
+.status-icon {
+  font-size: 18px;
   margin-right: 12px;
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 1px #ef4444;
+  line-height: 1;
 }
-.status-dot.correct { background: #10b981; box-shadow: 0 0 0 1px #10b981; }
+.status-icon.correct { color: #10b981; }
+.status-icon.wrong { color: #ef4444; }
 
 .item-content { flex: 1; }
 .item-q { font-size: 18px; margin-bottom: 4px; font-weight: 600; }
 .item-meta { font-size: 14px; color: #94a3b8; }
+.item-time { margin-right: 16px; }
 .green-text { color: #16a34a; font-weight: bold; }
 .red-text { color: #ef4444; font-weight: bold; }
 
-/* Empty State Doodle */
+/* Empty State */
 .empty-state { padding: 40px 0; }
 .empty-doodle {
   width: 80px; height: 80px; margin: 0 auto 16px;
@@ -324,21 +537,33 @@ const clearHistory = () => {
 }
 .link-btn { font-size: 18px; color: #3b82f6; font-weight: bold; }
 
+.clear-text-btn {
+  font-family: 'Patrick Hand', cursive;
+  font-size: 16px;
+  color: #94a3b8;
+}
+.clear-text-btn:hover { color: #ef4444; text-decoration: underline; }
+
+.pagination-wrapper {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
 /* Advice Section - Torn Paper */
 .advice-section {
   position: relative;
+  margin-top: 40px;
 }
 
 .torn-paper {
-  background: #fefce8; /* pale yellow */
+  background: #fefce8;
   position: relative;
   padding: 24px;
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-  /* 简单的CSS模拟撕裂边缘不太容易完美，这里用简单的波浪边框代替，或者 CSS Mask */
   filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.1));
 }
 
-/* Top jagged edge simulation using gradient */
 .paper-top {
   height: 10px;
   background-image: linear-gradient(135deg, transparent 50%, #fefce8 50%), linear-gradient(45deg, #fefce8 50%, transparent 50%);
@@ -382,5 +607,11 @@ const clearHistory = () => {
   left: 0;
   font-weight: bold;
   color: #d97706;
+}
+
+@media (max-width: 768px) {
+  .charts-section {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -54,7 +56,18 @@ public class WrongBookServiceImpl extends ServiceImpl<WrongBookMapper, WrongBook
         
         if (!questionIds.isEmpty()) {
             List<Question> questions = questionService.listByIds(questionIds);
-            questionPage.setRecords(questions);
+            
+            // 使用 Map 按照 questionIds 的顺序重新排序，确保与错题本记录顺序一致
+            // Source: 解决 listByIds 不保证顺序的问题
+            Map<Long, Question> questionMap = questions.stream()
+                    .collect(Collectors.toMap(Question::getId, q -> q));
+            
+            List<Question> sortedQuestions = questionIds.stream()
+                    .map(questionMap::get)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+            
+            questionPage.setRecords(sortedQuestions);
         }
         
         return questionPage;

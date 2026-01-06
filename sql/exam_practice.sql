@@ -59,6 +59,7 @@ CREATE TABLE `question`  (
   `is_marked` tinyint(1) NULL DEFAULT 0 COMMENT '是否标记为重点',
   `wrong_count` int NULL DEFAULT 0 COMMENT '做错次数',
   `practice_count` int NULL DEFAULT 0 COMMENT '练习次数',
+  `import_log_id` bigint NULL DEFAULT NULL COMMENT '关联的导入日志ID',
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,

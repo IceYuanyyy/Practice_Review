@@ -41,11 +41,6 @@ public class PracticeRecord {
     private Boolean isCorrect;
 
     /**
-     * 答题耗时（秒）
-     */
-    private Integer costTime;
-
-    /**
      * 练习时间
      */
     @TableField(fill = FieldFill.INSERT)

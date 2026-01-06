@@ -747,8 +747,7 @@ const submitAnswer = async () => {
   try {
     await submitAnswerApi({
       questionId: currentQuestion.value.id,
-      userAnswer: userAnswer.value,
-      costTime: 0
+      userAnswer: userAnswer.value
     })
     practiceStore.submitAnswer(userAnswer.value)
     

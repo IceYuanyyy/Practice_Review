@@ -106,4 +106,29 @@ public class UserController {
         log.info("用户修改密码: userId={}", userId);
         return Result.success("密码修改成功");
     }
+
+    /**
+     * 获取所有用户列表（仅管理员）
+     * 用于管理功能的用户选择器
+     * 
+     * @return 用户列表
+     */
+    @GetMapping("/list")
+    public Result<java.util.List<UserVO>> getAllUsers() {
+        Long userId = getCurrentUserId();
+        User currentUser = userService.getById(userId);
+        
+        // 权限检查：仅管理员可访问
+        if (currentUser == null || !"admin".equals(currentUser.getRole())) {
+            return Result.error("无权访问");
+        }
+        
+        // 获取所有用户
+        java.util.List<User> users = userService.list();
+        java.util.List<UserVO> userVOList = users.stream()
+            .map(UserVO::fromUser)
+            .collect(java.util.stream.Collectors.toList());
+        
+        return Result.success(userVOList);
+    }
 }

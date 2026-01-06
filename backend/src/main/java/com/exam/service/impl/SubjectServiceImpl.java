@@ -131,4 +131,16 @@ public class SubjectServiceImpl extends ServiceImpl<SubjectMapper, Subject> impl
 
         log.info("已重新统计所有科目的题目数量");
     }
+
+    @Override
+    @Transactional
+    public void removeEmptySubjects() {
+        QueryWrapper<Subject> wrapper = new QueryWrapper<>();
+        wrapper.le("question_count", 0);
+        long count = this.count(wrapper);
+        if (count > 0) {
+            this.remove(wrapper);
+            log.info("已清理 {} 个空闲科目", count);
+        }
+    }
 }

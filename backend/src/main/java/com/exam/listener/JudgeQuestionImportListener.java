@@ -30,24 +30,30 @@ public class JudgeQuestionImportListener extends AnalysisEventListener<JudgeQues
     private SubjectService subjectService;
     private String customSubject; // 自定义科目名称
     private Long userId; // 导入用户ID
+    private Long importLogId; // 导入日志ID
     private int successCount = 0;
     private int failCount = 0;
     // 统计每个科目导入的题目数量
     private Map<String, Integer> subjectCountMap = new HashMap<>();
 
     public JudgeQuestionImportListener(QuestionService questionService, SubjectService subjectService) {
-        this(questionService, subjectService, null, null);
+        this(questionService, subjectService, null, null, null);
     }
 
     public JudgeQuestionImportListener(QuestionService questionService, SubjectService subjectService, String customSubject) {
-        this(questionService, subjectService, customSubject, null);
+        this(questionService, subjectService, customSubject, null, null);
     }
 
     public JudgeQuestionImportListener(QuestionService questionService, SubjectService subjectService, String customSubject, Long userId) {
+        this(questionService, subjectService, customSubject, userId, null);
+    }
+    
+    public JudgeQuestionImportListener(QuestionService questionService, SubjectService subjectService, String customSubject, Long userId, Long importLogId) {
         this.questionService = questionService;
         this.subjectService = subjectService;
         this.customSubject = customSubject;
         this.userId = userId;
+        this.importLogId = importLogId;
     }
 
     @Override
@@ -75,30 +81,39 @@ public class JudgeQuestionImportListener extends AnalysisEventListener<JudgeQues
             failCount++;
         }
     }
-
+    
     @Override
     public void doAfterAllAnalysed(AnalysisContext context) {
         // 保存剩余数据
-        saveBatch();
-        
-        // 更新科目表中的题目数量
-        for (Map.Entry<String, Integer> entry : subjectCountMap.entrySet()) {
-            subjectService.incrementQuestionCount(entry.getKey(), entry.getValue());
+        if (!questions.isEmpty()) {
+            saveBatch();
         }
-        
-        log.info("判断题导入完成，成功: {}，失败: {}", successCount, failCount);
+
+        // 更新科目表统计数据
+        for (Map.Entry<String, Integer> entry : subjectCountMap.entrySet()) {
+            try {
+                subjectService.incrementQuestionCount(entry.getKey(), entry.getValue());
+            } catch (Exception e) {
+                log.error("更新科目统计失败: {}", entry.getKey(), e);
+            }
+        }
+
+        log.info("判断题导入完成: 成功={}, 失败={}", successCount, failCount);
     }
 
     private void saveBatch() {
-        if (!questions.isEmpty()) {
-            // 统计每个科目的题目数量
-            for (Question question : questions) {
-                String subject = question.getSubject();
-                subjectCountMap.put(subject, subjectCountMap.getOrDefault(subject, 0) + 1);
-            }
-            
+        try {
             questionService.saveBatch(questions);
             successCount += questions.size();
+            // 统计科目数量
+            for (Question q : questions) {
+                subjectCountMap.merge(q.getSubject(), 1, Integer::sum);
+            }
+            log.info("批量保存判断题: {} 条", questions.size());
+        } catch (Exception e) {
+            failCount += questions.size();
+            log.error("批量保存判断题失败", e);
+        } finally {
             questions.clear();
         }
     }
@@ -139,12 +154,16 @@ public class JudgeQuestionImportListener extends AnalysisEventListener<JudgeQues
         }
         
         question.setDifficulty(dto.getDifficulty() != null ? dto.getDifficulty() : "medium");
+        question.setDisplayOrder(0); // 默认值，数据库会自动管理排序
         question.setIsMarked(false);
         question.setWrongCount(0);
         question.setPracticeCount(0);
         
         // 设置题目所属用户
         question.setOwnerId(userId);
+        
+        // 设置导入日志ID
+        question.setImportLogId(importLogId);
 
         return question;
     }
