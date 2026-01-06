@@ -72,7 +72,8 @@ public class QuestionController {
             @RequestParam(required = false) String subject,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String difficulty,
-            @RequestParam(required = false) Long importLogId) {
+            @RequestParam(required = false) Long importLogId,
+            @RequestParam(required = false) String keyword) {
         
         Long userId = getCurrentUserId();
         boolean isAdmin = isAdmin();
@@ -100,7 +101,12 @@ public class QuestionController {
         if (importLogId != null) {
             wrapper.eq("import_log_id", importLogId);
         }
+        // 关键词搜索（搜索题目内容）
+        if (keyword != null && !keyword.isEmpty()) {
+            wrapper.like("content", keyword);
+        }
         
+        // 按类型和显示顺序排序
         wrapper.orderByAsc("type", "display_order");
         questionService.page(questionPage, wrapper);
         

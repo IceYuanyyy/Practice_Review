@@ -488,6 +488,7 @@ const difficultyOptions = [
 const columns = [
   { type: 'selection' },
   { title: 'ID', key: 'id', width: 70, align: 'center' },
+  { title: '序号', key: 'displayOrder', width: 70, align: 'center' },
   {
     title: '题型',
     key: 'type',
