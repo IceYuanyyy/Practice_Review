@@ -259,6 +259,23 @@
         <div class="search-hint">按 Enter 开始搜索</div>
       </div>
     </n-modal>
+    <!-- Rocket Launch Overlay -->
+    <transition name="fade">
+      <div v-if="showLaunchAnimation" class="launch-overlay">
+        <div class="stars-bg"></div>
+        <div class="rocket-container">
+          <div class="rocket-body">
+            <n-icon :component="RocketOutline" size="120" color="#fff" />
+          </div>
+          <div class="thrust-flame"></div>
+          <div class="smoke-particle p1"></div>
+          <div class="smoke-particle p2"></div>
+          <div class="smoke-particle p3"></div>
+          <div class="smoke-particle p4"></div>
+        </div>
+        <div class="launch-text">SYSTEM OPTIMIZING...</div>
+      </div>
+    </transition>
   </n-layout>
 </template>
 
@@ -291,7 +308,9 @@ import {
   SparklesOutline,
   FlashOutline,
   PulseOutline,
-  HardwareChipOutline
+
+  HardwareChipOutline,
+  RocketOutline
 } from '@vicons/ionicons5'
 import { useUserStore } from '@/stores/user'
 import { isEffectsEnabled, toggleEffects } from '@/utils/mouseEffects'
@@ -445,36 +464,36 @@ const readNotification = (item) => {
 const cpuLoad = ref(42)
 const syncRate = ref(98)
 const isBoosting = ref(false)
+const showLaunchAnimation = ref(false)
 
 // Simulating Fluctuations
 setInterval(() => {
-  if (!isBoosting.value) {
+  if (!isBoosting.value && !showLaunchAnimation.value) {
     cpuLoad.value = Math.max(20, Math.min(80, cpuLoad.value + Math.floor(Math.random() * 10) - 5))
     syncRate.value = Math.max(90, Math.min(100, syncRate.value + Math.floor(Math.random() * 3) - 1))
   }
 }, 2000)
 
 const triggerBoost = () => {
-    if (isBoosting.value) return
+    if (isBoosting.value || showLaunchAnimation.value) return
     isBoosting.value = true
-    message.loading('Optimizing Neural Link...', { duration: 1500 })
+    showLaunchAnimation.value = true
     
-    // Simulate Boost
+    // Simulate Boost Calculation
     let interval = setInterval(() => {
         cpuLoad.value = Math.floor(Math.random() * 100)
         syncRate.value = Math.floor(Math.random() * 100)
     }, 100)
     
+    // Animation Duration
     setTimeout(() => {
         clearInterval(interval)
         cpuLoad.value = 12
         syncRate.value = 100
         isBoosting.value = false
+        showLaunchAnimation.value = false
         message.success('System Optimized: Efficiency +200%')
-        
-        // Trigger generic confetti if available (window.confetti) or just message
-        // Since we don't have a confetti lib ready, the message is enough feedback for now
-    }, 2000)
+    }, 3000)
 }
 </script>
 
@@ -1117,3 +1136,119 @@ const triggerBoost = () => {
   transform: rotate(-1deg);
 }
 </style>
+/* === ROCKET LAUNCH ANIMATION === */
+.launch-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(to bottom, #0f172a, #1e293b);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.stars-bg {
+  position: absolute;
+  top: 0; 
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: radial-gradient(white 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: starsScroll 3s linear infinite;
+  opacity: 0.5;
+}
+
+.rocket-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: rocketFly 3s ease-in-out forwards;
+}
+
+.rocket-body {
+  z-index: 10;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+  animation: shake 0.5s ease-in-out infinite;
+}
+
+.thrust-flame {
+  width: 20px;
+  height: 60px;
+  background: linear-gradient(to bottom, #f59e0b, #ef4444, transparent);
+  border-radius: 50%;
+  margin-top: -10px;
+  filter: blur(5px);
+  animation: flameFlicker 0.1s infinite alternate;
+  transform-origin: top center;
+}
+
+.smoke-particle {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  bottom: -40px;
+  filter: blur(8px);
+}
+.smoke-particle.p1 { width: 40px; height: 40px; left: -30px; animation: smoke 1s linear infinite 0.1s; }
+.smoke-particle.p2 { width: 50px; height: 50px; right: -30px; animation: smoke 1s linear infinite 0.2s; }
+.smoke-particle.p3 { width: 30px; height: 30px; left: -10px; animation: smoke 0.8s linear infinite 0ms; }
+.smoke-particle.p4 { width: 45px; height: 45px; right: -10px; animation: smoke 1.2s linear infinite 0.3s; }
+
+.launch-text {
+  margin-top: 50px;
+  font-family: 'Courier New', monospace;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px var(--neon-cyan);
+  letter-spacing: 4px;
+  animation: pulseText 1s infinite alternate;
+}
+
+@keyframes rocketFly {
+  0% { transform: translateY(100vh) scale(0.5); }
+  20% { transform: translateY(20vh) scale(1); }
+  60% { transform: translateY(0vh) scale(1); }
+  100% { transform: translateY(-120vh) scale(1); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+@keyframes flameFlicker {
+  0% { transform: scaleY(1); opacity: 0.8; }
+  100% { transform: scaleY(1.2); opacity: 1; }
+}
+
+@keyframes starsScroll {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 100px; }
+}
+
+@keyframes smoke {
+  0% { transform: translateY(0) scale(1); opacity: 0.8; }
+  100% { transform: translateY(100px) scale(2); opacity: 0; }
+}
+
+@keyframes pulseText {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+} 
+/* End Rocket Launch Animation */

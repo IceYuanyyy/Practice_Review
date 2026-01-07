@@ -232,127 +232,199 @@ const stats = ref({
   recentPractice: []
 })
 
+// 通用手绘字体配置
+const handTextStyle = { 
+  fontFamily: '"Patrick Hand", cursive',
+  fontSize: 16
+}
+
+// 通用颜色配置 (Pastel colors)
+const sketchColors = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff']
+
 // 科目分布饼图配置
 const subjectChartOption = computed(() => ({
+  color: sketchColors,
   tooltip: {
     trigger: 'item',
-    formatter: '{b}: {c} 题 ({d}%)'
+    formatter: '{b}: {c} 题 ({d}%)',
+    textStyle: handTextStyle,
+    backgroundColor: '#fffdf5',
+    borderColor: '#2c3e50',
+    borderWidth: 2,
+    extraCssText: 'box-shadow: 4px 4px 0 rgba(0,0,0,0.1); border-radius: 4px;'
   },
   legend: {
     orient: 'vertical',
-    left: 'left'
+    left: 'left',
+    textStyle: handTextStyle
   },
   series: [
     {
       name: '科目分布',
       type: 'pie',
-      radius: '50%',
-      data: Object.entries(stats.value.subjectDistribution || {}).map(([name, value]) => ({
-        name,
-        value
-      })),
+      radius: ['40%', '70%'], // Donut chart for modern doodle look
+      avoidLabelOverlap: false,
+      itemStyle: {
+        borderRadius: 10,
+        borderColor: '#fff',
+        borderWidth: 2
+      },
+      label: {
+        show: false,
+        position: 'center'
+      },
       emphasis: {
+        label: {
+          show: true,
+          fontSize: '20',
+          fontWeight: 'bold',
+          fontFamily: '"Gochi Hand", cursive',
+          color: '#2c3e50'
+        },
         itemStyle: {
           shadowBlur: 10,
           shadowOffsetX: 0,
           shadowColor: 'rgba(0, 0, 0, 0.5)'
         }
-      }
+      },
+      labelLine: {
+        show: false
+      },
+      data: Object.entries(stats.value.subjectDistribution || {}).map(([name, value]) => ({
+        name,
+        value
+      }))
     }
   ]
 }))
 
 // 题型分布饼图配置
 const typeChartOption = computed(() => ({
+  color: sketchColors.slice(2).concat(sketchColors.slice(0, 2)), // Rotate colors
   tooltip: {
     trigger: 'item',
-    formatter: '{b}: {c} 题 ({d}%)'
+    formatter: '{b}: {c} 题 ({d}%)',
+    textStyle: handTextStyle,
+    backgroundColor: '#fffdf5',
+    borderColor: '#2c3e50',
+    borderWidth: 2,
+    extraCssText: 'box-shadow: 4px 4px 0 rgba(0,0,0,0.1); border-radius: 4px;'
   },
   legend: {
     orient: 'vertical',
-    left: 'left'
+    left: 'left',
+    textStyle: handTextStyle
   },
   series: [
     {
       name: '题型分布',
       type: 'pie',
-      radius: '50%',
+      radius: '60%',
+      // Rose Type
+      roseType: 'area',
+      itemStyle: {
+        borderRadius: 8,
+        borderColor: '#fff',
+        borderWidth: 2
+      },
       data: Object.entries(stats.value.typeDistribution || {}).map(([name, value]) => ({
         name,
         value
       })),
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 10,
-          shadowOffsetX: 0,
-          shadowColor: 'rgba(0, 0, 0, 0.5)'
-        }
-      }
+      label: { textStyle: handTextStyle }
     }
   ]
 }))
 
 // 难度分布柱状图配置
 const difficultyChartOption = computed(() => ({
+  color: ['#a0c4ff'], // Light Blue
   tooltip: {
     trigger: 'axis',
-    axisPointer: {
-      type: 'shadow'
-    }
+    axisPointer: { type: 'shadow' },
+    textStyle: handTextStyle,
+    backgroundColor: '#fffdf5',
+    borderColor: '#2c3e50',
+    borderWidth: 2
   },
+  grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
   xAxis: {
     type: 'category',
-    data: Object.keys(stats.value.difficultyDistribution || {})
+    data: Object.keys(stats.value.difficultyDistribution || {}),
+    axisLabel: { ...handTextStyle, rotate: 10 },
+    axisLine: { lineStyle: { color: '#2c3e50', width: 2, type: 'dashed' } }
   },
   yAxis: {
-    type: 'value'
+    type: 'value',
+    axisLabel: handTextStyle,
+    splitLine: { lineStyle: { type: 'dotted', color: '#cbd5e1' } }
   },
   series: [
     {
-      name: '题目数',
+      name: '题目数量',
       type: 'bar',
-      data: Object.values(stats.value.difficultyDistribution || {}),
+      barWidth: '50%',
       itemStyle: {
-        color: '#60a5fa'
-      }
+        borderRadius: [5, 5, 0, 0],
+        borderWidth: 2,
+        borderColor: '#2c3e50',
+        color: '#a0c4ff'
+      },
+      data: Object.values(stats.value.difficultyDistribution || {})
     }
   ]
 }))
-
-// 练习趋势折线图配置
+// 练习趋势折线图配置 (Hand Drawn)
 const trendChartOption = computed(() => ({
   tooltip: {
-    trigger: 'axis'
+    trigger: 'axis',
+    textStyle: handTextStyle,
+    backgroundColor: '#fffdf5',
+    borderColor: '#2c3e50',
+    borderWidth: 2
   },
+  grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
   xAxis: {
     type: 'category',
-    data: (stats.value.recentPractice || []).map(item => item.date)
+    data: (stats.value.recentPractice || []).map(item => item.date),
+    axisLabel: { ...handTextStyle, rotate: 10 },
+    axisLine: { lineStyle: { color: '#2c3e50', width: 2, type: 'dashed' } }
   },
   yAxis: {
-    type: 'value'
+    type: 'value',
+    axisLabel: handTextStyle,
+    splitLine: { lineStyle: { type: 'dotted', color: '#cbd5e1' } }
   },
   series: [
     {
       name: '练习次数',
       type: 'line',
-      data: (stats.value.recentPractice || []).map(item => item.count),
-      smooth: true,
+      smooth: 0.5, // Wobbly line
+      symbol: 'circle',
+      symbolSize: 8,
       itemStyle: {
-        color: '#34d399'
+        color: '#34d399',
+        borderWidth: 2,
+        borderColor: '#2c3e50'
+      },
+      lineStyle: {
+        color: '#34d399',
+        width: 3,
+        type: 'solid',
+        shadowColor: 'rgba(0,0,0,0.2)',
+        shadowOffsetY: 3
       },
       areaStyle: {
         color: {
           type: 'linear',
-          x: 0,
-          y: 0,
-          x2: 0,
-          y2: 1,
+          x: 0, y: 0, x2: 0, y2: 1,
           colorStops: [
-            { offset: 0, color: 'rgba(52, 211, 153, 0.3)' },
-            { offset: 1, color: 'rgba(52, 211, 153, 0.05)' }
+            { offset: 0, color: 'rgba(52, 211, 153, 0.4)' },
+            { offset: 1, color: 'rgba(52, 211, 153, 0)' }
           ]
         }
-      }
+      },
+      data: (stats.value.recentPractice || []).map(item => item.count)
     }
   ]
 }))

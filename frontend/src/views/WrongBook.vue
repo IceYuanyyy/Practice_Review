@@ -1,53 +1,55 @@
 <template>
   <div class="wrong-book-container">
-    <!-- 筛选配置面板 -->
+    <!-- 筛选配置面板 (Hand-Drawn Style) -->
     <div v-if="!showWrongQuestions" class="filter-panel">
-      <n-card>
-        <div class="config-header">
-          <h2 class="config-title">🔥 错题本复习</h2>
-          <p class="config-subtitle">选择科目开始针对性复习</p>
-        </div>
+      <div class="notebook-cover-start">
+         <div class="spiral-binding-left">
+           <div v-for="n in 12" :key="n" class="ring"></div>
+         </div>
+         
+         <div class="cover-body">
+            <!-- Doodle Decoration -->
+            <div class="doodle-sun">
+              <svg viewBox="0 0 100 100" width="80" height="80">
+                <circle cx="50" cy="50" r="25" fill="none" stroke="#ef4444" stroke-width="3" />
+                <path d="M50 10 L50 20 M50 80 L50 90 M10 50 L20 50 M80 50 L90 50 M22 22 L29 29 M71 71 L78 78 M22 78 L29 71 M71 29 L78 22" stroke="#ef4444" stroke-width="3" />
+              </svg>
+            </div>
 
-        <n-form>
-          <!-- 科目选择 -->
-          <n-form-item>
-            <template #label>
-              <div class="form-label">📚 选择科目</div>
-            </template>
-            <n-select
-              v-model:value="selectedSubject"
-              :options="subjectOptions"
-              placeholder="选择要复习的科目"
-              size="large"
-            />
-          </n-form-item>
-
-          <!-- 开始按钮 -->
-          <n-button
-            type="error"
-            block
-            size="large"
-            @click="startWrongPractice"
-            class="start-btn"
-            :disabled="!selectedSubject"
-          >
-            🚀 开始复习
-          </n-button>
-
-          <!-- 返回查看列表按钮 -->
-          <n-button
-            text
-            block
-            size="medium"
-            @click="showWrongQuestions = true"
-            class="view-list-btn"
-          >
-            📋 查看错题列表
-          </n-button>
-        </n-form>
-      </n-card>
+            <div class="config-header">
+              <h2 class="hand-title-large">错题本复习</h2>
+              <div class="hand-subtitle-large">专攻薄弱点，把知识点"画"进脑海里！</div>
+            </div>
+            
+            <n-form :label-width="80" size="large" class="sketch-form">
+              <n-grid :cols="1" :y-gap="32">
+                <n-grid-item>
+                  <div class="hand-label">📚 选择科目</div>
+                  <n-select 
+                    v-model:value="selectedSubject" 
+                    :options="subjectOptions" 
+                    placeholder="请选择科目" 
+                    class="sketch-select"
+                  />
+                </n-grid-item>
+                
+                <n-grid-item>
+                  <div class="action-buttons-stack">
+                    <button class="sketch-btn-main" @click="startWrongPractice" :disabled="!selectedSubject">
+                      <span class="btn-text">🚀 开始复习</span>
+                      <span class="btn-bg"></span>
+                    </button>
+                    
+                    <button class="sketch-btn-text secondary" @click="showWrongQuestions = true">
+                      <span>📋 翻看所有错题</span>
+                    </button>
+                  </div>
+                </n-grid-item>
+              </n-grid>
+            </n-form>
+         </div>
+      </div>
     </div>
-
     <!-- 错题列表视图 -->
     <div v-else>
       <div class="wall-header">
@@ -192,15 +194,27 @@ const loadWrongQuestions = async () => {
       page: currentPage.value,
       size: pageSize.value
     })
+    
     if (res.data) {
+      // 如果当前页为空且不是第一页 (例如删除了最后一页的唯一数据)，自动回退
+      if (res.data.records.length === 0 && currentPage.value > 1) {
+        currentPage.value--
+        await loadWrongQuestions() // Retry with prev page
+        return
+      }
+      
       wrongQuestions.value = res.data.records || []
       totalCount.value = res.data.total || 0
     }
   } catch (error) {
     console.error('加载错题本失败:', error)
-    // 回退到 store 数据
-    wrongQuestions.value = practiceStore.wrongQuestions
-    totalCount.value = practiceStore.wrongQuestions.length
+    // 降级: 如果接口失败，尝试使用本地 Store 作为缓存展示 (提升体验)
+    if (practiceStore.wrongQuestions.length > 0) {
+       // 简单的本地分页模拟
+       const start = (currentPage.value - 1) * pageSize.value
+       wrongQuestions.value = practiceStore.wrongQuestions.slice(start, start + pageSize.value)
+       totalCount.value = practiceStore.wrongQuestions.length
+    }
   } finally {
     loading.value = false
   }
@@ -336,97 +350,202 @@ const retakeQuestion = (question) => {
 /* Filter Panel Styles - 复用 Practice 页面样式 */
 .filter-panel {
   width: 100%;
-  max-width: 480px;
+  max-width: 600px; /* Wider for notebook look */
   margin: 0 auto;
-  padding-top: 60px;
+  padding-top: 40px;
 }
 
-:deep(.n-card) {
-  background-color: #fff;
-  border: 2px solid #2c3e50 !important;
-  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px !important;
-  box-shadow: 4px 4px 0px rgba(0,0,0,0.15) !important;
+/* Notebook Cover Styles */
+.notebook-cover-start {
+  display: flex;
+  background-color: transparent;
+  perspective: 1000px;
 }
 
-.config-header {
+.spiral-binding-left {
+  width: 40px;
+  background: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  padding: 20px 0;
+  border-radius: 8px 0 0 8px;
+  border: 1px solid #cbd5e1;
+  box-shadow: inset -5px 0 10px rgba(0,0,0,0.1);
+  z-index: 2;
+}
+
+.ring {
+  width: 50px; /* Wider than container to stick out */
+  height: 12px;
+  background: linear-gradient(90deg, #94a3b8 0%, #cbd5e1 50%, #64748b 100%);
+  border-radius: 6px;
+  margin: 15px 0;
+  transform: rotate(-5deg);
+  box-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.cover-body {
+  flex: 1;
+  background: #fffdf5; /* Cream paper */
+  border: 2px solid #2c3e50;
+  border-left: none;
+  border-radius: 0 15px 15px 0;
+  padding: 40px;
+  position: relative;
+  box-shadow: 8px 8px 0 rgba(44, 62, 80, 0.2);
+  min-height: 520px;
+  
+  /* Texture: Dot Grid */
+  background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+  background-size: 20px 20px;
+  
+  display: flex;
+  flex-direction: column;
+}
+
+.doodle-sun {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  animation: spin-slow 20s linear infinite;
+  opacity: 0.8;
+}
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.hand-title-large {
+  font-family: 'Gochi Hand', cursive;
+  font-size: 42px;
+  color: #2c3e50;
+  margin-bottom: 12px;
   text-align: center;
+  transform: rotate(-2deg);
+  text-shadow: 2px 2px 0px rgba(0,0,0,0.05);
+}
+
+.hand-subtitle-large {
+  text-align: center;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 18px;
+  color: #64748b;
+  margin-bottom: 40px;
+}
+
+/* Form Styles */
+.form-field-wrapper {
   margin-bottom: 24px;
 }
 
-.config-title {
+.hand-label {
   font-family: 'Gochi Hand', cursive;
-  font-size: 36px;
-  color: #2c3e50;
+  font-size: 20px;
   margin-bottom: 8px;
-  text-shadow: 2px 2px 0px rgba(0,0,0,0.05);
-  transform: rotate(-2deg);
-}
-
-.config-subtitle {
-  font-size: 16px;
-  color: #57606a;
-  font-family: 'Patrick Hand', cursive;
-}
-
-.form-label {
-  font-size: 18px;
-  font-weight: 700;
   color: #2c3e50;
-  margin-bottom: 6px;
-  transform: rotate(-1deg);
-  display: inline-block;
+  display: block;
 }
 
-.start-btn {
-  height: 56px;
-  font-size: 22px;
-  font-family: 'Gochi Hand', cursive;
+:deep(.sketch-select .n-base-selection) {
+  border: 2px solid #2c3e50 !important;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px !important;
+  background: #fff !important;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+  min-height: 46px;
+}
+:deep(.sketch-select .n-base-selection:hover) {
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.15);
+}
+:deep(.sketch-select .n-base-selection-label) {
+  font-family: 'Patrick Hand', cursive; 
+  font-size: 18px;
+  line-height: 46px;
+}
+
+/* Custom Sketch Buttons */
+.action-buttons-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   margin-top: 20px;
-  border: 3px solid #dc2626;
-  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-  box-shadow: 3px 3px 0px #dc2626;
-  background-color: #ff6b6b;
+}
+
+.sketch-btn-main {
+  position: relative;
+  width: 100%;
+  height: 60px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  transition: transform 0.2s;
+}
+
+.sketch-btn-main .btn-text {
+  position: absolute;
+  top: 0; left: 0; 
+  width: 100%; height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #ff6b6b;
   color: #fff;
-  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 2px solid #2c3e50;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  font-family: 'Gochi Hand', cursive;
+  font-size: 24px;
+  z-index: 2;
+  transition: transform 0.2s;
 }
 
-.start-btn:hover:not(:disabled) {
-  transform: translate(-1px, -1px) rotate(1deg);
-  box-shadow: 5px 5px 0px #dc2626;
+.sketch-btn-main .btn-bg {
+  position: absolute;
+  top: 6px; left: 6px;
+  width: 100%; height: 100%;
+  background: #2c3e50;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  z-index: 1;
 }
 
-.start-btn:active {
+.sketch-btn-main:hover .btn-text {
+  transform: translate(-2px, -2px);
+}
+.sketch-btn-main:active .btn-text {
   transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0px #dc2626;
 }
-
-.start-btn:disabled {
-  opacity: 0.4;
+.sketch-btn-main:disabled {
+  opacity: 0.7;
+  filter: grayscale(0.8);
   cursor: not-allowed;
 }
 
-.view-list-btn {
-  margin-top: 16px;
-  font-family: 'Patrick Hand', cursive;
-  font-size: 16px;
+.sketch-btn-text {
+  background: none;
+  border: none;
+  font-family: 'Gochi Hand', cursive;
+  font-size: 18px;
+  color: #64748b;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 4px;
+  padding: 8px;
+  transition: all 0.2s;
+}
+.sketch-btn-text:hover {
+  color: #2c3e50;
+  text-decoration-style: solid;
+  transform: scale(1.05);
+}
+.sketch-btn-text.secondary {
+  color: #94a3b8;
+}
+.sketch-btn-text.secondary:hover {
   color: #64748b;
 }
-
-.view-list-btn:hover {
-  color: #2c3e50;
-}
-
-/* Header Styles */
-.wall-header {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin-bottom: 48px;
-  border-bottom: 3px dashed #cbd5e1;
-  padding-bottom: 20px;
-}
-
-.header-content { display: flex; align-items: baseline; gap: 20px; }
 
 /* 科目选择器样式 */
 .subject-selector {

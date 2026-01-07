@@ -26,43 +26,54 @@
 
       <!-- Main Content -->
       <div v-if="!currentQuestion" class="filter-panel">
-        <n-card :bordered="false" size="huge" class="config-card glass">
-          <div class="config-header">
-            <h2 class="config-title">开始专注练习</h2>
-            <p class="config-subtitle">选择科目与题型，进入沉浸式刷题模式</p>
-          </div>
-          
-          <n-form :label-width="80" size="large" class="config-form">
-            <n-grid :cols="1" :y-gap="24">
-              <n-grid-item>
-                <div class="form-label">选择科目</div>
-                <n-select 
-                  v-model:value="filters.subject" 
-                  :options="subjectOptions" 
-                  placeholder="全部科目" 
-                  class="premium-select"
-                />
-              </n-grid-item>
-              <n-grid-item>
-                <div class="form-label">题目类型</div>
-                <n-select 
-                  v-model:value="filters.type" 
-                  :options="typeOptions" 
-                  placeholder="混合题型" 
-                  class="premium-select"
-                />
-              </n-grid-item>
-              <n-grid-item>
-                <n-button type="primary" block size="large" @click="startPractice" class="start-btn">
-                  <template #icon>
-                    <n-icon :component="SchoolOutline" />
-                  </template>
-                  进入模式
-                </n-button>
-              </n-grid-item>
-            </n-grid>
-          </n-form>
-        </n-card>
+        <div class="notebook-cover-start">
+           <div class="spiral-binding-left">
+             <div v-for="n in 12" :key="n" class="ring"></div>
+           </div>
+           
+           <div class="cover-body">
+              <div class="doodle-sun">
+                <svg viewBox="0 0 100 100" width="80" height="80">
+                  <circle cx="50" cy="50" r="25" fill="none" stroke="#f59e0b" stroke-width="3" />
+                  <path d="M50 10 L50 20 M50 80 L50 90 M10 50 L20 50 M80 50 L90 50 M22 22 L29 29 M71 71 L78 78 M22 78 L29 71 M71 29 L78 22" stroke="#f59e0b" stroke-width="3" />
+                </svg>
+              </div>
+
+              <div class="config-header">
+                <h2 class="hand-title-large">开始专注练习</h2>
+                <div class="hand-subtitle-large">准备好笔和纸了吗？让我们开始吧！(模拟)</div>
+              </div>
+              
+              <n-form :label-width="80" size="large" class="sketch-form">
+                <n-grid :cols="1" :y-gap="32">
+                  <n-grid-item>
+                    <div class="hand-label">✏️ 选择科目</div>
+                    <n-select 
+                      v-model:value="filters.subject" 
+                      :options="subjectOptions" 
+                      placeholder="全部科目" 
+                      class="sketch-select"
+                    />
+                  </n-grid-item>
+                  <n-grid-item>
+                    <div class="hand-label">📝 题目类型</div>
+                    <n-select 
+                      v-model:value="filters.type" 
+                      :options="typeOptions" 
+                      placeholder="混合题型" 
+                      class="sketch-select"
+                    />
+                  </n-grid-item>
+                  <n-grid-item>
+                    <button class="sketch-btn-main" @click="startPractice">
+                      <span class="btn-text">进入沉浸模式</span>
+                      <span class="btn-bg"></span>
+                    </button>
+                  </n-grid-item>
+                </n-grid>
+              </n-form>
+           </div>
+        </div>
       </div>
 
       <div v-else style="display: contents">
@@ -89,7 +100,7 @@
                       <span class="stat-label">轮次</span>
                   </div>
                   <div class="stat-item">
-                      <span class="stat-val">{{ practiceHistory.length }}</span>
+                      <span class="stat-val">{{ answeredCount }}</span>
                       <span class="stat-label">已做</span>
                   </div>
                 </div>
@@ -389,6 +400,76 @@
         </div>
       </div>
     </n-modal>
+
+    <!-- 手绘风格未完成提醒 Modal -->
+    <n-modal v-model:show="showResumeModal" :auto-focus="false" :mask-closable="false">
+      <div class="sketch-modal-card">
+        <div class="tape-sticker"></div>
+        
+        <div class="sketch-modal-header">
+          <n-icon size="32" color="#e74c3c" :component="SchoolOutline" />
+          <span class="sketch-title">未完成的挑战!</span>
+        </div>
+
+        <div class="sketch-modal-content">
+          <p class="sketch-text">
+            嘿！在 <strong class="subject-highlight">{{ resumeModalData.subject }}</strong> 笔记本里<br>发现你还有没写完的题：
+          </p>
+          <div class="doodle-progress">
+             <span class="progress-fraction">
+               <span class="curr">{{ resumeModalData.currentIndex }}</span>
+               <span class="mid-line">/</span>
+               <span class="total">{{ resumeModalData.totalCount }}</span>
+             </span>
+          </div>
+          <p class="sketch-hint">要接着上次的写，还是翻篇重来？</p>
+        </div>
+
+        <div class="sketch-modal-footer">
+          <button class="sketch-btn secondary" @click="handleResumeReset">
+            <span class="btn-text">🔄 重置本轮</span>
+          </button>
+          
+          <button class="sketch-btn primary" @click="handleResumeContinue">
+            <span class="btn-text">✏️ 继续练习</span>
+             <!-- 下划线装饰 -->
+             <svg class="btn-scribble" viewBox="0 0 100 10" preserveAspectRatio="none">
+               <path d="M0,5 Q 50,10 100,5" stroke="currentColor" fill="none" stroke-width="2" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </n-modal>
+
+    <!-- 手绘风格退出确认 Modal -->
+    <n-modal v-model:show="showExitModal" :auto-focus="false" :mask-closable="true">
+      <div class="sketch-modal-card">
+        <div class="tape-sticker"></div>
+        
+        <div class="sketch-modal-header">
+           <!-- Doodle Warning Icon -->
+          <n-icon size="40" color="#f59e0b" :component="BookOutline" />
+          <span class="sketch-title">合上笔记本?</span>
+        </div>
+
+        <div class="sketch-modal-content">
+          <p class="sketch-text">
+            确定要现在结束练习吗？<br>
+            <span style="font-size: 14px; color: #94a3b8;">(进度会自动保存，下次可以接着写哦)</span>
+          </p>
+        </div>
+
+        <div class="sketch-modal-footer">
+          <button class="sketch-btn secondary" @click="showExitModal = false">
+            <span class="btn-text">再写会儿</span>
+          </button>
+          
+          <button class="sketch-btn primary warning-btn" @click="handleConfirmExit">
+            <span class="btn-text">确认退出</span>
+          </button>
+        </div>
+      </div>
+    </n-modal>
   </div>
 </template>
 
@@ -396,7 +477,7 @@
 import { ref, computed, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMessage, useDialog, NCard, NForm, NFormItem, NGrid, NGridItem, NSelect, NButton, NTag, NText, NIcon, NModal, NInput, NProgress, NScrollbar, NSwitch } from 'naive-ui'
-import { CloseOutline, CheckmarkCircle, CloseCircle, CheckmarkOutline, SearchOutline, ArrowBackOutline, SchoolOutline, BookOutline, RefreshOutline } from '@vicons/ionicons5'
+import { CloseOutline, CheckmarkCircle, CloseCircle, CheckmarkOutline, SearchOutline, ArrowBackOutline, ArrowForwardOutline, SchoolOutline, BookOutline, RefreshOutline } from '@vicons/ionicons5'
 import { getRandomQuestion } from '@/api/question'
 import { submitAnswer as submitAnswerApi, startRound, nextRoundQuestion, prevRoundQuestion, resetRound, searchQuestions, startWrongBookPractice, nextWrongQuestion, jumpRoundQuestion, getRoundResults } from '@/api/practice'
 import { getAllSubjects } from '@/api/subject'
@@ -426,10 +507,47 @@ const wrongBookSubject = ref(null)
 const practiceHistory = ref([]) // [{question, userAnswer}]
 const historyIndex = ref(-1) // 当前在历史中的位置
 
+// 已答题数量，避免未作答的跳转也计入 "已做"
+const answeredCount = computed(() =>
+  practiceHistory.value.filter(record => record.userAnswer !== null && record.userAnswer !== undefined && record.userAnswer !== '').length
+)
+
 // 是否在回顾历史模式（不在历史末尾）
 const isReviewingHistory = computed(() => {
   return historyIndex.value >= 0 && historyIndex.value < practiceHistory.value.length - 1
 })
+
+// 恢复轮次提示 Modal
+const showResumeModal = ref(false)
+const resumeModalData = ref({
+  subject: '',
+  currentIndex: 0,
+  totalCount: 0,
+  roundData: null
+})
+
+const handleResumeContinue = () => {
+  if (resumeModalData.value.roundData) {
+    applyRoundState(resumeModalData.value.roundData)
+    showResumeModal.value = false
+  }
+}
+
+const handleResumeReset = async () => {
+  const subject = resumeModalData.value.subject
+  try {
+    const resetRes = await resetRound(subject)
+    if (resetRes.data && resetRes.data.question) {
+      applyRoundState(resetRes.data)
+      roundResults.value = {}
+      zenTime.value = 0
+      message.success('新的一页，新的开始！') // More casual message
+    }
+  } catch (e) {
+    message.error('哎呀，纸张卡住了 (重置失败)')
+  }
+  showResumeModal.value = false
+}
 
 // 搜索相关
 const showSearchModal = ref(false)
@@ -438,9 +556,9 @@ const searchResults = ref([])
 
 // 计算进度百分比（基于做题历史）
 const roundProgress = computed(() => {
-  if (practiceHistory.value.length === 0) return 0
+  if (answeredCount.value === 0) return 0
   // 每 20 题一个轮回
-  return Math.round(((practiceHistory.value.length % 20) / 20) * 100)
+  return Math.round(((answeredCount.value % 20) / 20) * 100)
 })
 
 // 展示用题号与总数：优先使用后端返回的总量，随机模式退化为历史长度
@@ -492,6 +610,41 @@ const jumpToRoundIdx = async (number) => {
   const index = number - 1
   if (index === currentIndex.value && currentQuestion.value) return
   
+  // 先检查历史记录中是否有该题目（根据 roundIndex 匹配）
+  const existingRecordIdx = practiceHistory.value.findIndex(
+    record => record.roundIndex === index
+  )
+  
+  // 如果历史中已有该题记录，直接从历史中恢复（类似上一题逻辑）
+  if (existingRecordIdx !== -1) {
+    const record = practiceHistory.value[existingRecordIdx]
+    historyIndex.value = existingRecordIdx
+    
+    currentQuestion.value = record.question
+    currentIndex.value = record.roundIndex
+    practiceStore.setCurrentQuestion(record.question)
+    
+    // 恢复用户之前的选择
+    if (record.userAnswer) {
+      userAnswer.value = record.userAnswer
+      // 多选题需要恢复 selectedAnswers（userAnswer 是如 "AB" 这样的字符串）
+      if (record.question.type === 'multiple-choice' && record.userAnswer) {
+        selectedAnswers.value = record.userAnswer.split('')
+      } else {
+        selectedAnswers.value = []
+      }
+      practiceStore.showAnalysis = true // 显示解析（因为已经答过）
+    } else {
+      userAnswer.value = null
+      selectedAnswers.value = []
+      practiceStore.showAnalysis = false
+    }
+    
+    message.info(`已跳转至第 ${number} 题`)
+    return
+  }
+  
+  // 历史中没有该题记录，从后端获取
   try {
     practiceStore.reset()
     const res = await jumpRoundQuestion(currentSubject.value, index)
@@ -502,8 +655,9 @@ const jumpToRoundIdx = async (number) => {
       userAnswer.value = null
       selectedAnswers.value = []
       
-      // 更新历史（如果需要，或者这里可以简单重置历史索引）
-      // 为简化，目前优先满足跳转
+      // 将新题目添加到历史记录
+      addToHistory(res.data.question, res.data.currentIndex)
+      
       message.info(`已跳转至第 ${number} 题`)
     }
   } catch (err) {
@@ -511,39 +665,86 @@ const jumpToRoundIdx = async (number) => {
   }
 }
 
-// === 禅意专注卡片逻辑 ===
+// === 禅意专注卡片逻辑 (Enhanced) ===
 const zenTime = ref(0)
 const zenTimer = ref(null)
-const zenQuote = ref('')
-// 新增：防走神状态
+const zenQuote = ref('') 
 const isDistracted = ref(false)
 const isZenModeEnabled = ref(false)
+const practiceContainerRef = ref(null)
+
 const zenQuotes = [
   "心如止水，专注当下。",
   "每一点进步，都值得庆祝。",
   "呼吸，感受思维的流动。",
   "不要急，答案就在心中。",
-  "慢慢来，比较快。"
+  "慢慢来，比较快。",
+  "知行合一，止于至善。",
+  "宁静致远，厚积薄发。"
 ]
 
+// Current Quote (Reactive)
+const currentZenQuote = computed(() => {
+    if (zenQuote.value) return zenQuote.value
+    return zenQuotes[Math.floor(zenTime.value / 60) % zenQuotes.length]
+})
+
+const formatZenTime = (seconds) => {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = seconds % 60
+  return `${h > 0 ? h + ':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+}
+
+const toggleZenMode = (val) => {
+  if (val) {
+    enterZenMode()
+  } else {
+    exitZenMode()
+  }
+}
+
+const enterZenMode = () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {})
+  }
+  startZenTimer()
+  message.success('已进入沉浸模式')
+}
+
+const exitZenMode = () => {
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {})
+  }
+  // Optional: stop timer on exit? Or keep running? 
+  // Reference implies we might want to stop or just reset state.
+  // We'll keep timer running if they just exit fullscreen but stay in app, 
+  // BUT usually Zen Mode implies the timer IS the Zen session.
+  // Let's NOT stop timer here to avoid losing progress if accidental exit.
+}
+
 const startZenTimer = () => {
-  if (zenTimer.value) return
-  zenQuote.value = zenQuotes[Math.floor(Math.random() * zenQuotes.length)]
+  if (zenTimer.value) clearInterval(zenTimer.value)
+  if (!zenQuote.value) zenQuote.value = zenQuotes[Math.floor(Math.random() * zenQuotes.length)]
   zenTimer.value = setInterval(() => {
     zenTime.value++
   }, 1000)
 }
 
-const formatZenTime = (seconds) => {
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+const stopZenTimer = () => {
+  if (zenTimer.value) {
+    clearInterval(zenTimer.value)
+    zenTimer.value = null
+  }
+  isDistracted.value = false
 }
 
-// 监听鼠标移出/移入
-// 新增：容器 Ref
-const practiceContainerRef = ref(null)
+// Watch switch
+watch(isZenModeEnabled, (newVal) => {
+  toggleZenMode(newVal)
+})
 
+// Focus/Blur/Mouse logic
 const handleMouseLeave = () => { 
   if (isZenModeEnabled.value) {
     isDistracted.value = true 
@@ -551,11 +752,12 @@ const handleMouseLeave = () => {
 }
 const handleMouseEnter = () => { isDistracted.value = false }
 
-watch(isZenModeEnabled, (newVal) => {
-  if (!newVal) {
-    isDistracted.value = false
-  }
-})
+// Fullscreen listener to sync state
+const handleFullscreenChange = () => {
+    if (!document.fullscreenElement && isZenModeEnabled.value) {
+        isZenModeEnabled.value = false
+    }
+}
 
 onMounted(async () => {
   // 挂载防走神监听 - 仅针对练习区域容器
@@ -567,6 +769,7 @@ onMounted(async () => {
   // 窗口失焦点也算走神 (可选，保留以增强体验)
   window.addEventListener('blur', handleMouseLeave)
   window.addEventListener('focus', handleMouseEnter)
+  document.addEventListener('fullscreenchange', handleFullscreenChange)
 
   await loadLastFilter()
   startZenTimer()
@@ -581,6 +784,7 @@ onUnmounted(() => {
   }
   window.removeEventListener('blur', handleMouseLeave)
   window.removeEventListener('focus', handleMouseEnter)
+  document.removeEventListener('fullscreenchange', handleFullscreenChange)
 })
 const filters = reactive({ subject: null, type: null, difficulty: null })
 
@@ -617,87 +821,68 @@ const typeOptions = [
 // 解析选项
 const options = computed(() => {
   if (!currentQuestion.value) return []
-  const questionType = currentQuestion.value.type
+  const { type, options: rawOpts, id } = currentQuestion.value
   
-  // 选择题类型才需要解析选项
-  if (questionType !== 'single-choice' && questionType !== 'multiple-choice' && questionType !== 'choice') return []
+  // 仅选择题需要解析选项
+  if (!['single-choice', 'multiple-choice', 'choice'].includes(type)) return []
   
   try {
-    const opts = currentQuestion.value.options
-    console.log('原始选项数据:', opts, '类型:', typeof opts)
+    let parsedOpts = rawOpts
     
-    // 检查选项是否存在且不为空
-    if (!opts) {
-      console.warn('选项数据不存在，题目ID:', currentQuestion.value.id)
-      message.warning('题目选项数据缺失，已跳过')
-      return []
-    }
-    
-    // 如果是字符串，尝试解析为JSON
-    let parsedOpts = opts
-    if (typeof opts === 'string') {
+    // 1. 如果是字符串，尝试 JSON 解析
+    if (typeof rawOpts === 'string') {
       try {
-        parsedOpts = JSON.parse(opts)
+        parsedOpts = JSON.parse(rawOpts)
       } catch (e) {
-        console.error('选项JSON解析失败:', opts)
-        message.error('题目选项格式错误')
+        // 解析失败，可能是非 JSON 字符串，尝试简单分割或报错
+        console.warn(`选项非标准JSON格式 (ID: ${id}):`, rawOpts)
+        // 尝试按换行符或常见分隔符兜底解析 (可选)
         return []
       }
     }
     
-    // 检查是否为数组且有内容
+    // 2. 确保是数组
     if (!Array.isArray(parsedOpts)) {
-      console.error('选项不是数组类型:', typeof parsedOpts, parsedOpts)
-      message.error('题目选项格式错误')
-      return []
-    }
-    
-    if (parsedOpts.length === 0) {
-      console.warn('选项数组为空，题目ID:', currentQuestion.value.id)
-      message.warning('题目没有可用选项，已跳过')
-      return []
-    }
-    
-    // 解析每个选项
-    const parsed = parsedOpts.map((opt, index) => {
-      // 支持多种格式：
-      // 1. "A:选项内容" 
-      // 2. "选项内容" (自动分配ABCD)
-      if (typeof opt === 'string' && opt.trim()) {
-        if (opt.includes(':')) {
-          const [key, ...rest] = opt.split(':')
-          const text = rest.join(':').trim()
-          if (text) {
-            return { 
-              key: key.trim(), 
-              text: text
-            }
-          }
-        } else {
-          // 没有冒号，自动分配字母
-          const letters = ['A', 'B', 'C', 'D', 'E', 'F']
-          return {
-            key: letters[index],
-            text: opt.trim()
-          }
-        }
+      if (typeof parsedOpts === 'object' && parsedOpts !== null) {
+        // 处理对象格式 case: { "A": "content", "B": "content" }
+        return Object.entries(parsedOpts).map(([key, text]) => ({ key, text }))
       }
-      return null
-    }).filter(opt => opt !== null && opt.key && opt.text)
-    
-    console.log('解析后的选项:', parsed)
-    
-    if (parsed.length === 0) {
-      console.error('所有选项解析后均无效，原始数据:', parsedOpts)
-      message.error('题目选项内容无效')
+      console.error(`选项数据类型错误 (ID: ${id}):`, parsedOpts)
       return []
     }
     
-    return parsed
-  } catch (e) { 
-    console.error('选项解析异常:', e, currentQuestion.value)
-    message.error('题目选项解析失败')
-    return [] 
+    if (parsedOpts.length === 0) return []
+
+    // 3. 规范化每个选项
+    // 支持格式: { key: 'A', text: '...' } 或 "A:..." 或 "..."
+    const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+    
+    return parsedOpts.map((opt, index) => {
+      // Case A: 对象且已有 key/text
+      if (typeof opt === 'object' && opt !== null) {
+        if (opt.key && opt.text) return opt
+        // 只有 value/label 等其他字段的情况，需做映射适配，暂定:
+        return { key: opt.key || letters[index], text: opt.text || opt.value || opt.label || JSON.stringify(opt) }
+      }
+      
+      // Case B: 字符串
+      if (typeof opt === 'string') {
+        const trimmed = opt.trim()
+        // 检测 "A: 内容" 或 "A. 内容" 格式
+        const match = trimmed.match(/^([A-Z])[:.、]\s*(.*)$/)
+        if (match) {
+          return { key: match[1], text: match[2] }
+        }
+        // 纯内容，自动分配字母
+        return { key: letters[index] || `?${index}`, text: trimmed }
+      }
+      
+      return null
+    }).filter(item => item !== null && item.text)
+    
+  } catch (e) {
+    console.error(`题目选项解析异常 (ID: ${currentQuestion.value?.id}):`, e)
+    return []
   }
 })
 
@@ -962,32 +1147,15 @@ const startPractice = async () => {
       return
     }
     
-    // --- 新增：检测是否有进度，提示用户是否重置 ---
+    // --- 新增：检测是否有进度，提示用户是否重置 (手绘风格 Modal) ---
     if (res.data.currentIndex > 0) {
-      dialog.warning({
-        title: '发现未完成的轮次',
-        content: `您在"${subject}"科目已完成 ${res.data.currentIndex}/${res.data.totalCount} 道题。是否继续练习，还是重置本轮从头开始？`,
-        positiveText: '继续练习',
-        negativeText: '重置本轮',
-        onPositiveClick: () => {
-          // 继续：直接应用当前状态
-          applyRoundState(res.data)
-        },
-        onNegativeClick: async () => {
-          // 重置：调用 resetRound API
-          try {
-            const resetRes = await resetRound(subject)
-            if (resetRes.data && resetRes.data.question) {
-              applyRoundState(resetRes.data)
-              roundResults.value = {} // 清空状态
-              zenTime.value = 0 // 重置计时器
-              message.success('已重置本轮，开始新的挑战！')
-            }
-          } catch (e) {
-            message.error('重置失败，请重试')
-          }
-        }
-      })
+      resumeModalData.value = {
+        subject: subject,
+        currentIndex: res.data.currentIndex,
+        totalCount: res.data.totalCount,
+        roundData: res.data
+      }
+      showResumeModal.value = true
       return
     }
     // ------------------------------------------
@@ -1119,12 +1287,18 @@ const goToPrevQuestion = () => {
   // 恢复用户之前的选择
   if (record.userAnswer) {
     userAnswer.value = record.userAnswer
+    // 多选题需要恢复 selectedAnswers（userAnswer 是如 "AB" 这样的字符串）
+    if (record.question.type === 'multiple-choice') {
+      selectedAnswers.value = record.userAnswer.split('')
+    } else {
+      selectedAnswers.value = []
+    }
     practiceStore.showAnalysis = true // 显示解析（因为已经答过）
   } else {
     userAnswer.value = null
+    selectedAnswers.value = []
     practiceStore.showAnalysis = false
   }
-  selectedAnswers.value = []
   
   message.info(`返回第 ${historyIndex.value + 1} 题`)
 }
@@ -1149,12 +1323,18 @@ const goToNextHistoryQuestion = () => {
   // 恢复用户之前的选择
   if (record.userAnswer) {
     userAnswer.value = record.userAnswer
+    // 多选题需要恢复 selectedAnswers（userAnswer 是如 "AB" 这样的字符串）
+    if (record.question.type === 'multiple-choice') {
+      selectedAnswers.value = record.userAnswer.split('')
+    } else {
+      selectedAnswers.value = []
+    }
     practiceStore.showAnalysis = true
   } else {
     userAnswer.value = null
+    selectedAnswers.value = []
     practiceStore.showAnalysis = false
   }
-  selectedAnswers.value = []
   
   message.info(`前进到第 ${historyIndex.value + 1} 题`)
 }
@@ -1331,20 +1511,20 @@ const jumpToQuestion = (question) => {
 }
 
 
+
+const showExitModal = ref(false)
 const exitPractice = () => {
-  dialog.warning({
-    title: '确认',
-    content: '确定要退出练习吗？',
-    positiveText: '确定',
-    negativeText: '取消',
-    onPositiveClick: () => {
-      practiceStore.reset()
-      currentQuestion.value = null
-      userAnswer.value = null
-      selectedAnswers.value = [] // 重置多选答案
-    }
-  })
+  showExitModal.value = true
 }
+
+const handleConfirmExit = () => {
+  practiceStore.reset()
+  currentQuestion.value = null
+  userAnswer.value = null
+  selectedAnswers.value = [] // 重置多选答案
+  showExitModal.value = false
+}
+
 </script>
 
 <style scoped>
@@ -1372,9 +1552,173 @@ const exitPractice = () => {
 }
 
 /* Filter Configuration */
-.filter-panel { width: 100%; max-width: 480px; }
+.filter-panel {
+  width: 100%;
+  max-width: 600px; /* Wider for notebook look */
+  margin: 0 auto;
+  padding-top: 40px;
+}
 
-/* 必须穿透 NCard 的样式来应用手绘风 */
+/* Notebook Cover Styles */
+.notebook-cover-start {
+  display: flex;
+  background-color: transparent;
+  perspective: 1000px;
+  max-width: 500px; /* Constrain width to look like a book */
+  margin: 40px auto;
+  position: relative;
+}
+
+/* Spiral Binding - Silver/Grey Metal Look */
+.spiral-binding-left {
+  width: 40px;
+  background: transparent; /* Let rings float */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  padding: 30px 0;
+  z-index: 10;
+  margin-right: -15px; /* Overlap with cover */
+}
+
+.ring {
+  width: 45px;
+  height: 14px;
+  background: linear-gradient(to bottom, #bdc3c7 0%, #e0e0e0 40%, #95a5a6 100%); /* Metallic silver */
+  border-radius: 4px;
+  margin: 12px 0;
+  box-shadow: 
+    0 2px 4px rgba(0,0,0,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.8);
+  transform: rotate(-3deg);
+  position: relative;
+}
+.ring::after {
+  /* Hole visual */
+  content: '';
+  position: absolute;
+  right: -5px;
+  top: 2px;
+  width: 10px;
+  height: 10px;
+  background: #333;
+  border-radius: 50%;
+  opacity: 0.2;
+}
+
+.cover-body {
+  flex: 1;
+  background: #fff; /* Pure white paper */
+  border: 2px solid #2c3e50;
+  border-radius: 4px 12px 12px 4px; /* Slightly rounded right corners */
+  padding: 40px;
+  position: relative;
+  min-height: 600px;
+  
+  /* Deep shadow for thickness */
+  box-shadow: 
+    5px 5px 0 #bdc3c7, /* Page thickness */
+    10px 10px 20px rgba(0,0,0,0.15); /* Drop shadow */
+  
+  /* Texture: Dot Grid */
+  background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+  
+  display: flex;
+  flex-direction: column;
+}
+
+.doodle-sun {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  /* Sun doodle style */
+}
+
+.hand-title-large {
+  font-family: 'Gochi Hand', cursive;
+  font-size: 40px;
+  color: #2c3e50;
+  margin-top: 20px;
+  margin-bottom: 8px;
+  text-align: center;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.hand-subtitle-large {
+  text-align: center;
+  font-family: 'Gochi Hand', cursive;
+  font-size: 16px;
+  color: #94a3b8;
+  margin-bottom: 50px;
+}
+
+/* Form Styles */
+.hand-label {
+  font-family: 'Gochi Hand', cursive;
+  font-size: 20px;
+  margin-bottom: 8px;
+  color: #2c3e50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+:deep(.sketch-select .n-base-selection) {
+  border: 2px solid #2c3e50 !important;
+  border-radius: 8px !important; /* Straighter edges for book look */
+  background: #fff !important;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+  min-height: 48px;
+  transition: all 0.2s;
+}
+:deep(.sketch-select .n-base-selection:hover) {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 rgba(0,0,0,0.15);
+}
+
+/* Custom Sketch Buttons - Red/Pink CTA */
+.sketch-btn-main {
+  position: relative;
+  width: 100%;
+  height: 64px;
+  border: 3px solid #1e293b;
+  background: #ff6b6b; /* The Red/Pink color from screenshot */
+  border-radius: 8px; /* Slightly rounded */
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  transition: all 0.2s;
+  margin-top: 30px;
+  box-shadow: 6px 6px 0 #1e293b;
+}
+
+.sketch-btn-main .btn-text {
+  width: 100%; height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  font-family: 'Gochi Hand', cursive;
+  font-size: 26px;
+  letter-spacing: 2px;
+}
+/* Remove old layered elements if any */
+.sketch-btn-main .btn-bg { display: none; }
+
+.sketch-btn-main:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 #1e293b;
+  background-color: #ff5252;
+}
+.sketch-btn-main:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 #1e293b;
+}
+
+/* 必须穿透 NCard 的样式来应用手绘风 (Remnant from old code, keeping if used elsewhere, else harmless) */
 :deep(.n-card) {
   background-color: #fff;
   border: 2px solid #2c3e50 !important;
@@ -1382,38 +1726,8 @@ const exitPractice = () => {
   box-shadow: var(--shadow-hard) !important;
 }
 
+/* Deprecated Config Header & Start Button Styles replaced by above, but keeping .config-header class logic if used generically */
 .config-header { text-align: center; margin-bottom: 24px; }
-.config-title { 
-  font-family: 'Gochi Hand', cursive; 
-  font-size: 36px; /* 缩小标题 */
-  color: #2c3e50; 
-  margin-bottom: 8px; 
-  text-shadow: 2px 2px 0px rgba(0,0,0,0.05);
-  transform: rotate(-2deg);
-}
-.config-subtitle { font-size: 16px; color: #57606a; font-family: 'Patrick Hand', cursive; }
-.form-label { font-size: 18px; font-weight: 700; color: #2c3e50; margin-bottom: 6px; transform: rotate(-1deg); display: inline-block;}
-
-.start-btn {
-  height: 56px;
-  font-size: 22px;
-  font-family: 'Gochi Hand', cursive;
-  margin-top: 20px;
-  border: 2px solid #2c3e50;
-  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-  box-shadow: 3px 3px 0px #2c3e50;
-  background-color: #ffb7b2; /* 嫩粉色 */
-  color: #2c3e50;
-  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-.start-btn:hover {
-  transform: translate(-1px, -1px) rotate(1deg);
-  box-shadow: 5px 5px 0px #2c3e50;
-}
-.start-btn:active {
-  transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0px #2c3e50;
-}
 
 /* Question Wrapper */
 .question-wrapper { width: 100%; max-width: 760px; position: relative; }
@@ -2358,4 +2672,1544 @@ const exitPractice = () => {
   text-align: center;
 }
 
+/* Filter Configuration */
+.filter-panel {
+  width: 100%;
+  max-width: 600px; /* Wider for notebook look */
+  margin: 0 auto;
+  padding-top: 40px;
+}
+
+/* Notebook Cover Styles */
+.notebook-cover-start {
+  display: flex;
+  background-color: transparent;
+  perspective: 1000px;
+  max-width: 500px; /* Constrain width to look like a book */
+  margin: 40px auto;
+  position: relative;
+}
+
+/* Spiral Binding - Silver/Grey Metal Look */
+.spiral-binding-left {
+  width: 40px;
+  background: transparent; /* Let rings float */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  padding: 30px 0;
+  z-index: 10;
+  margin-right: -15px; /* Overlap with cover */
+}
+
+.ring {
+  width: 45px;
+  height: 14px;
+  background: linear-gradient(to bottom, #bdc3c7 0%, #e0e0e0 40%, #95a5a6 100%); /* Metallic silver */
+  border-radius: 4px;
+  margin: 12px 0;
+  box-shadow: 
+    0 2px 4px rgba(0,0,0,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.8);
+  transform: rotate(-3deg);
+  position: relative;
+}
+.ring::after {
+  /* Hole visual */
+  content: '';
+  position: absolute;
+  right: -5px;
+  top: 2px;
+  width: 10px;
+  height: 10px;
+  background: #333;
+  border-radius: 50%;
+  opacity: 0.2;
+}
+
+.cover-body {
+  flex: 1;
+  background: #fff; /* Pure white paper */
+  border: 2px solid #2c3e50;
+  border-radius: 4px 12px 12px 4px; /* Slightly rounded right corners */
+  padding: 40px;
+  position: relative;
+  min-height: 600px;
+  
+  /* Deep shadow for thickness */
+  box-shadow: 
+    5px 5px 0 #bdc3c7, /* Page thickness */
+    10px 10px 20px rgba(0,0,0,0.15); /* Drop shadow */
+  
+  /* Texture: Dot Grid */
+  background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+  
+  display: flex;
+  flex-direction: column;
+}
+
+.doodle-sun {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  /* Sun doodle style */
+}
+
+.hand-title-large {
+  font-family: 'Gochi Hand', cursive;
+  font-size: 40px;
+  color: #2c3e50;
+  margin-top: 20px;
+  margin-bottom: 8px;
+  text-align: center;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.hand-subtitle-large {
+  text-align: center;
+  font-family: 'Gochi Hand', cursive;
+  font-size: 16px;
+  color: #94a3b8;
+  margin-bottom: 50px;
+}
+
+/* Form Styles */
+.hand-label {
+  font-family: 'Gochi Hand', cursive;
+  font-size: 20px;
+  margin-bottom: 8px;
+  color: #2c3e50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+:deep(.sketch-select .n-base-selection) {
+  border: 2px solid #2c3e50 !important;
+  border-radius: 8px !important; /* Straighter edges for book look */
+  background: #fff !important;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+  min-height: 48px;
+  transition: all 0.2s;
+}
+:deep(.sketch-select .n-base-selection:hover) {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 rgba(0,0,0,0.15);
+}
+
+/* Custom Sketch Buttons - Red/Pink CTA */
+.sketch-btn-main {
+  position: relative;
+  width: 100%;
+  height: 64px;
+  border: 3px solid #1e293b;
+  background: #ff6b6b; /* The Red/Pink color from screenshot */
+  border-radius: 8px; /* Slightly rounded */
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  transition: all 0.2s;
+  margin-top: 30px;
+  box-shadow: 6px 6px 0 #1e293b;
+}
+
+.sketch-btn-main .btn-text {
+  width: 100%; height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  font-family: 'Gochi Hand', cursive;
+  font-size: 26px;
+  letter-spacing: 2px;
+}
+/* Remove old layered elements if any */
+.sketch-btn-main .btn-bg { display: none; }
+
+.sketch-btn-main:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 #1e293b;
+  background-color: #ff5252;
+}
+.sketch-btn-main:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 #1e293b;
+}
+
+/* 必须穿透 NCard 的样式来应用手绘风 (Remnant from old code, keeping if used elsewhere, else harmless) */
+:deep(.n-card) {
+  background-color: #fff;
+  border: 2px solid #2c3e50 !important;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px !important;
+  box-shadow: var(--shadow-hard) !important;
+}
+
+/* Deprecated Config Header & Start Button Styles replaced by above, but keeping .config-header class logic if used generically */
+.config-header { text-align: center; margin-bottom: 24px; }
+
+/* Question Wrapper */
+.question-wrapper { width: 100%; max-width: 760px; position: relative; }
+
+/* 顶部工具栏 */
+.practice-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 8px 0;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.progress-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  padding: 8px 20px;
+  border: 2px solid #2c3e50;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  box-shadow: 3px 3px 0px rgba(0,0,0,0.1);
+  font-family: 'Patrick Hand', cursive;
+  transition: all 0.2s ease;
+}
+
+.progress-chip:hover {
+  transform: scale(1.02) rotate(-1deg);
+  box-shadow: 4px 4px 0px rgba(0,0,0,0.15);
+}
+
+.chip-icon {
+  font-size: 18px;
+}
+
+.chip-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2c3e50;
+  letter-spacing: 0.5px;
+}
+
+.chip-divider {
+  color: #cbd5e1;
+  font-weight: 300;
+}
+
+.chip-total {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.9);
+  border: 2px solid #e2e8f0;
+  color: #64748b;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.toolbar-btn:hover {
+  background: #f8fafc;
+  border-color: #3b82f6;
+  color: #3b82f6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.toolbar-btn.close:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+.progress-info { display: flex; align-items: center; gap: 12px; flex: 1; }
+.progress-label { font-size: 14px; font-weight: 700; color: #57606a; transform: rotate(-2deg); }
+.progress-text { 
+  font-size: 16px; 
+  font-weight: 700; 
+  color: #2c3e50; 
+  background: #fff;
+  border: 2px solid #2c3e50;
+  padding: 2px 10px; 
+  border-radius: 12px 22px 14px 24px;
+  box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+  transform: rotate(1deg);
+}
+.close-btn { 
+  color: #2c3e50; 
+  transition: all 0.2s; 
+  font-weight: bold;
+}
+.close-btn:hover { 
+  transform: rotate(90deg) scale(1.1); 
+  color: #ef4444;
+}
+
+/* Round Badge */
+.round-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #10b981, #059669);
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 8px;
+  transform: rotate(-2deg);
+}
+
+/* Search Button */
+.search-btn {
+  color: #2c3e50;
+  margin-right: 8px;
+  transition: all 0.2s;
+}
+.search-btn:hover {
+  transform: scale(1.1);
+  color: #3b82f6;
+}
+
+/* Search Modal */
+.search-modal-content {
+  font-family: 'Patrick Hand', cursive;
+}
+.search-results {
+  margin-top: 20px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.search-result-item {
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.search-result-item:hover {
+  border-color: #3b82f6;
+  background: #f0f9ff;
+}
+.result-id {
+  font-weight: bold;
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+.result-content {
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Navigation Buttons */
+.nav-btn {
+  font-family: 'Patrick Hand', cursive;
+  font-size: 16px;
+  color: #64748b;
+  border: 2px solid #cbd5e1;
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+.nav-btn:hover:not(:disabled) {
+  color: #2c3e50;
+  border-color: #2c3e50;
+  transform: translateX(-2px);
+}
+.nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.nav-placeholder {
+  width: 100px;
+}
+
+/* Paper Card Effect - The Main Stage */
+.question-paper {
+  background: #fff; /* Pure white as seen in screenshot */
+  /* Double border effect for sketch look */
+  border: 3px solid #cbd5e1;
+  outline: 2px solid #2c3e50;
+  outline-offset: -8px;
+  
+  border-radius: 4px 20px 4px 25px / 20px 4px 25px 4px; /* Slight irregularity */
+  position: relative;
+  
+  /* Soft shadow lifting off the 'desk' */
+  box-shadow: 
+    0 10px 20px rgba(0,0,0,0.08),
+    0 2px 4px rgba(0,0,0,0.05);
+    
+  padding: 40px 60px 40px 70px; /* Spacious padding */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  min-height: 600px;
+  margin-top: 20px;
+  transform: rotate(-0.5deg); /* Subtle tilt */
+  max-width: 900px; /* Wider paper */
+}
+
+.question-paper:hover {
+  transform: rotate(0deg) scale(1.005);
+  box-shadow: 0 15px 30px rgba(0,0,0,0.12);
+}
+
+/* Paper Piled Effect - subtle underneath layers */
+.paper-piled::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 6px; left: 4px; right: -4px; bottom: -6px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px 20px 4px 25px;
+  transform: rotate(1.2deg);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* Holes decoration (Left side) */
+.paper-holes-left {
+  position: absolute;
+  left: 20px;
+  top: 50px;
+  bottom: 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.paper-holes-left .hole {
+  width: 16px;
+  height: 16px;
+  background: #e2e8f0; /* Darker hole fill */
+  border-radius: 50%;
+  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Paper Clip & Toolbar */
+.paper-clip-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  padding: 8px 16px;
+  border: 2px solid #2c3e50;
+  border-radius: 12px; /* Pill shape */
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+  transform: rotate(-1deg);
+}
+
+.paper-clip {
+  /* Hide actual clip, use icon or simplified view if needed, 
+     or keep simple line as spacer */
+  width: 2px;
+  height: 20px;
+  background: #cbd5e1;
+  border: none;
+  border-radius: 0;
+}
+
+.info-text {
+  font-family: 'Gochi Hand', cursive;
+  font-size: 20px;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+/* Zen Hanging Tag */
+.hanging-tag {
+  position: absolute;
+  top: -15px;
+  right: 20px; /* Moved inward slightly */
+  z-index: 20;
+  transform-origin: top center;
+  /* Simplified animation */
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.hanging-tag:hover {
+  transform: translateY(5px);
+}
+
+.hanging-tag.shaking {
+  animation: shake-tag 0.5s ease-in-out infinite;
+}
+@keyframes shake-tag {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(5deg); }
+  75% { transform: rotate(-5deg); }
+}
+
+.hanging-tag .string {
+  width: 2px;
+  height: 25px;
+  background: #cbd5e1; /* Lighter string */
+  margin: 0 auto;
+}
+.hanging-tag .tag-body {
+  background: #fff;
+  border: 2px solid #2c3e50;
+  border-radius: 8px; /* Softer corners */
+  padding: 10px 14px;
+  text-align: center;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+  min-width: 110px;
+}
+.zen-toggle { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.zen-label { font-size: 14px; font-weight: bold; color: #2c3e50; font-family: 'Patrick Hand', cursive; }
+.zen-display { font-family: 'Gochi Hand', cursive; font-size: 20px; color: #16a34a; font-weight: bold; min-height: 24px; }
+.zen-breath-dot { width: 8px; height: 8px; background: #cbd5e1; border-radius: 50%; margin: 6px auto; transition: all 0.3s; }
+.zen-breath-dot.active { background: #16a34a; box-shadow: 0 0 10px #16a34a; animation: breathe-dot 4s infinite; }
+.zen-message { font-size: 12px; color: #94a3b8; margin-top: 4px; font-family: 'Patrick Hand', cursive; }
+
+@keyframes breathe-dot {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.5); opacity: 1; }
+}
+
+.question-header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: flex-start; 
+  margin-bottom: 24px; 
+  border-bottom: 2px dashed #cbd5e1;
+  padding-bottom: 12px;
+}
+.type-tag {
+  border: 2px solid #2c3e50 !important;
+  font-weight: bold;
+  font-family: 'Patrick Hand', cursive;
+  box-shadow: 1px 1px 0px rgba(0,0,0,0.1);
+}
+.subject-text { margin-left: 10px; font-size: 14px; color: #57606a; font-weight: 700; font-family: 'Gochi Hand', cursive; letter-spacing: 1px; }
+
+.question-content { 
+  font-size: 24px; /* 恢复较大的字体 */
+  font-weight: 600; 
+  line-height: 1.6; 
+  color: #2c3e50; 
+  margin-bottom: 32px; 
+  font-family: 'Didact Gothic', 'Patrick Hand', sans-serif;
+}
+
+/* Options as Doodle Boxes */
+.options-list { display: flex; flex-direction: column; gap: 16px; }
+
+.option-item {
+  display: flex; align-items: center; padding: 14px 20px; /* 减少选项内边距 */
+  border: 2px solid #2c3e50;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  cursor: pointer; 
+  transition: all 0.2s; 
+  background: #fff;
+  position: relative;
+  min-height: 50px;
+}
+
+.option-item:hover:not(.disabled) { 
+  border-color: #2c3e50; 
+  background: #fff; 
+  transform: scale(1.01) rotate(-0.3deg); 
+  box-shadow: 3px 3px 0px rgba(0,0,0,0.1); 
+}
+
+/* Selected: Marker Effect */
+.option-item.selected { 
+  border-color: #2c3e50; 
+  background: #a2d2ff; /* 淡蓝色记号笔 */
+  box-shadow: 3px 3px 0px #2c3e50;
+  transform: rotate(0.5deg);
+}
+
+/* Analysis States */
+.option-item.correct-highlight { 
+  background-color: #ccfbf1;
+  border-color: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+}
+
+.option-item.error-highlight { 
+  background-color: #fee2e2;
+  border-color: #ef4444;
+  background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(239, 68, 68, 0.05) 10px, rgba(239, 68, 68, 0.05) 20px);
+}
+
+.option-key { 
+  width: 30px; height: 30px; 
+  background: #fff; 
+  border: 2px solid #2c3e50;
+  border-radius: 50% 40% 60% 50% / 40% 50% 60% 50%;
+  display: flex; align-items: center; justify-content: center; 
+  font-weight: 700; color: #2c3e50; 
+  margin-right: 16px; font-size: 16px;
+  font-family: 'Gochi Hand', cursive;
+  box-shadow: 1px 1px 0px rgba(0,0,0,0.1);
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.option-item.selected .option-key { 
+  background: #2c3e50; 
+  color: #fff;
+  transform: rotate(-8deg);
+}
+
+.option-text { flex: 1; font-size: 17px; color: #334155; font-weight: 600; line-height: 1.35; } 
+.center-text { text-align: center; font-size: 20px; font-family: 'Gochi Hand', cursive; }
+
+/* Checkbox Style */
+.option-checkbox {
+  width: 24px; height: 24px; border: 2px solid #2c3e50; margin-right: 14px;
+  border-radius: 4px 8px 3px 9px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.option-checkbox.checked { background: #2c3e50; color: #fff; }
+
+/* Action Bar with Decorations */
+.action-bar { 
+  margin-top: 40px; 
+  display: flex; 
+  justify-content: center; 
+  align-items: center;
+  position: relative;
+}
+
+.action-btn { 
+  min-width: 140px; 
+  height: 52px; 
+  font-size: 20px !important; 
+  font-family: 'Gochi Hand', cursive; 
+  font-weight: 600; 
+  letter-spacing: 1px;
+  border: 2px solid #2c3e50 !important;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px !important;
+  box-shadow: 4px 4px 0px #2c3e50 !important;
+  color: #2c3e50 !important;
+  background-color: #fcd34d !important; /* Restore Yellow */
+  transition: all 0.2s !important;
+}
+
+/* === NEW STYLES for Full Screen + Doodles === */
+
+/* 1. Reset Container to Full Screen */
+.practice-container {
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden; /* Contains the doodles */
+  
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* Align top for better scrolling */
+  padding: 16px;
+  
+  /* Transparent background to show Layout's industrial dot matrix */
+  background: transparent;
+  
+  /* Core variables */
+  --paper-bg: #fffdf7;
+  
+  font-family: 'Patrick Hand', cursive;
+  color: #2c3e50;
+}
+
+/* 2. Doodles Layer - Pencil Sketches on Desk */
+.doodles-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Let clicks pass through */
+  z-index: 0;
+}
+
+.doodle-item {
+  position: absolute;
+  color: #94a3b8; /* Slate-400 for doodles - pencil lead color */
+  mix-blend-mode: multiply; /* Blend into the desk */
+  animation: float ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(2deg); }
+}
+
+/* 3. Content Wrapper (The "Safe Zone" for valid UI) */
+.content-wrapper {
+  position: relative;
+  z-index: 1; /* Above doodles */
+  width: 100%;
+  max-width: 1400px; /* Expanded for 3 columns */
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+}
+.content-wrapper.has-question {
+  align-items: flex-start;
+}
+
+/* Filter panel stays centered */
+.filter-panel { 
+  width: 100%;
+  max-width: 480px; 
+  margin: auto; /* Vertically center in flex column */
+}
+
+/* Practice Layout (Grid/Flex for 3 cols) */
+.practice-main-layout {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  justify-content: center;
+  align-items: flex-start;
+  min-width: 0; /* 防止 flex 溢出问题 */
+}
+
+/* Adjust question wrapper for layout */
+.question-wrapper {
+  width: 100%;
+  max-width: 760px;
+  flex: 1; /* Allow it to fill available space */
+  flex-shrink: 1; /* Allow shrinking */
+  min-width: 0; /* Prevent overflow */
+}
+
+.action-btn:hover {
+  transform: translate(-1px, -1px) rotate(-1deg);
+  box-shadow: 6px 6px 0px #2c3e50 !important;
+}
+.action-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #2c3e50 !important;
+}
+.action-btn:disabled {
+  background-color: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Decor Arrow */
+.decor-arrow-next {
+  position: absolute;
+  right: -50px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-10deg);
+  width: 50px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+.decor-arrow-prev {
+  position: absolute;
+  left: -50px;
+  top: 50%;
+  transform: translateY(-50%) rotate(190deg);
+  width: 50px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Analysis Box */
+.analysis-box {
+  margin-top: 32px;
+  background: #fff;
+  border: 2px dashed #2c3e50;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 4px 4px 0px rgba(0,0,0,0.05);
+  transform: rotate(0.2deg);
+}
+.analysis-title { 
+  display: flex; align-items: center; gap: 8px; 
+  font-weight: 700; color: #2c3e50; font-size: 18px; 
+  font-family: 'Gochi Hand', cursive;
+}
+.analysis-content { padding-left: 0; border-left: none; margin-top: 12px; }
+.correct-answer-row { font-size: 16px; margin-bottom: 8px; font-family: 'Patrick Hand', cursive; }
+.correct-answer-row .value { color: #10b981; font-weight: 700; font-size: 20px; text-decoration: underline; text-decoration-style: wavy;}
+
+/* Animations */
+.slide-up-enter-active { transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); } 
+.slide-up-enter-from { opacity: 0; transform: translateY(30px) rotate(3deg); }
+.fade-leave-active { transition: opacity 0.2s; }
+.fade-leave-to { opacity: 0; }
+
+/* === Side Panel Styles === */
+.side-panel {
+  width: 280px; /* Increased from default */
+  background: #fffdf7; /* Creamy paper bg */
+  border: 2px solid #2c3e50;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  padding: 24px;
+  position: sticky;
+  top: 0;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  
+  /* Premium Shadow Effect */
+  box-shadow: 
+    0 4px 6px rgba(0,0,0,0.02),
+    4px 4px 0 rgba(44, 62, 80, 0.9); /* Solid shadow for comic look */
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.side-panel:hover {
+  transform: translateY(-4px) rotate(1deg);
+  box-shadow: 6px 6px 0 rgba(44, 62, 80, 0.9);
+}
+
+.side-header {
+  font-family: 'Gochi Hand', cursive;
+  font-size: 24px;
+  color: #2c3e50;
+  border-bottom: 2px dashed #cbd5e1;
+  padding-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.side-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Left Panel Specifics */
+.subject-card {
+  position: relative;
+  background: #fff;
+  padding: 16px;
+  border-radius: 12px;
+  border: 2px solid #2c3e50;
+  box-shadow: 4px 4px 0 rgba(44, 62, 80, 0.1);
+  overflow: hidden;
+  text-align: center;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.subject-card:hover { 
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 6px 6px 0 rgba(44, 62, 80, 0.15);
+}
+
+/* Notebook lines background effect */
+.subject-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: linear-gradient(#f1f5f9 1px, transparent 1px);
+  background-size: 100% 20px;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Red line margin effect */
+.subject-card::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; left: 20px;
+  width: 2px;
+  background: #fca5a5;
+  opacity: 0.6;
+}
+
+.subject-label { 
+  position: relative;
+  font-size: 12px; 
+  color: #94a3b8; 
+  margin-bottom: 2px; 
+  font-weight: 700; 
+  text-align: right;
+  z-index: 1;
+}
+
+.subject-main-text { 
+  position: relative;
+  font-weight: 800; 
+  font-size: 24px; 
+  color: #2c3e50; 
+  line-height: 1.2; 
+  font-family: 'Gochi Hand', cursive; 
+  z-index: 1;
+  padding-left: 10px; /* Offset for red line */
+}
+
+.subject-sub-text {
+  position: relative;
+  display: inline-block;
+  background: #fee2e2;
+  color: #ef4444;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 2px dashed #fca5a5;
+  transform: rotate(-2deg);
+  margin-top: 6px;
+  box-shadow: 2px 2px 0 rgba(239, 68, 68, 0.1);
+  z-index: 1;
+  font-family: 'Patrick Hand', cursive;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #fff;
+  border: 2px solid #2c3e50;
+  border-radius: 12px;
+  padding: 12px 8px;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+.stat-item:hover { transform: translateY(-2px); }
+
+.stat-val { font-size: 28px; font-weight: 700; font-family: 'Gochi Hand', cursive; color: #2c3e50; line-height: 1; }
+.stat-label { font-size: 13px; color: #64748b; margin-top: 4px; font-weight: 600; }
+
+.mode-tag {
+  background: #fee2e2;
+  color: #ef4444;
+  text-align: center;
+  padding: 6px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  border: 2px solid #ef4444;
+  box-shadow: 2px 2px 0 rgba(239, 68, 68, 0.2);
+}
+
+/* Right Panel specific */
+.sheet-info { text-align: right; font-size: 14px; color: #64748b; margin-bottom: 12px; font-weight: 600; }
+.bubble-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+.bubble {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #cbd5e1;
+  border-radius: 50%;
+  font-size: 14px;
+  color: #64748b;
+  cursor: default;
+  transition: all 0.2s;
+  font-family: 'Fredoka One', cursive, sans-serif;
+  background: #fff;
+}
+.bubble.done {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  color: #475569;
+}
+.bubble.active {
+  border-color: #2c3e50;
+  background: #2c3e50;
+  color: #fff;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+  transform: scale(1.15);
+  font-weight: bold;
+}
+.empty-sheet {
+  text-align: center; color: #94a3b8; padding: 20px 0; font-style: italic;
+}
+.side-footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+.reset-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #fff8e1; /* Soft yellow background matching theme */
+  border: 1px dashed #f59e0b; /* Amber dashed border */
+  color: #d97706;
+  font-family: 'Gochi Hand', cursive;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 2px 2px 0 rgba(245, 158, 11, 0.2);
+}
+
+.reset-wrapper:hover {
+  transform: translateY(-2px) rotate(1deg);
+  background: #fffbeb;
+  box-shadow: 3px 3px 0 rgba(245, 158, 11, 0.3);
+}
+
+.reset-wrapper:active {
+  transform: translateY(1px);
+  box-shadow: 1px 1px 0 rgba(245, 158, 11, 0.2);
+}
+
+.reset-icon { font-size: 16px; }
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .side-panel { display: none; } /* 仅在小屏幕下隐藏 */
+  .question-wrapper { width: 100%; max-width: 800px; margin: 0 auto; }
+}
+
+@media (min-width: 1201px) and (max-width: 1350px) {
+  /* 中等屏幕：稍微缩小侧边栏和间距 */
+  .side-panel { width: 220px; padding: 16px; }
+  .practice-main-layout { gap: 16px; }
+  .question-wrapper { max-width: 680px; }
+  .stat-val { font-size: 22px; }
+}
+
+
+/* Scrollbar & Layout Container Fixes - Appended */
+.practice-container {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--paper-bg);
+  position: relative;
+}
+
+.global-scrollbar {
+  height: 100%;
+}
+
+
+:deep(.practice-layout-container) {
+  min-height: 100%;
+  position: relative;
+  display: flex;
+  box-sizing: border-box;
+  padding: 40px 16px;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+  gap: 24px;
+}
+
+
+
+/* Practice Layout (Content inside scrollbar) */
+.practice-main-layout {
+  min-width: 0;
+  max-width: 1400px; /* Re-added centering constraint */
+  margin: 0 auto;    /* Re-added centering constraint */
+}
+
+/* Zen card & Answer Sheet Enhancements - Appended */
+.zen-card {
+  margin-top: 16px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(240,249,255,0.7) 100%);
+}
+
+.zen-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.zen-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #2c3e50;
+  font-family: 'Inter', sans-serif;
+}
+
+.zen-status {
+  font-size: 12px;
+  color: #10b981;
+  background: #ecfdf5;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.zen-content {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.zen-timer {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1e293b;
+  font-family: 'Fredoka One', cursive, sans-serif;
+  margin-bottom: 16px;
+}
+
+.zen-breath-wrapper {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.zen-breath-circle {
+  width: 20px;
+  height: 20px;
+  background: #3b82f6;
+  border-radius: 50%;
+  animation: breathe 4s ease-in-out infinite;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.5; box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); }
+  50% { transform: scale(2.5); opacity: 0.8; box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+}
+
+.zen-quote {
+  font-size: 13px;
+  color: #64748b;
+  font-style: italic;
+  line-height: 1.5;
+  min-height: 40px;
+}
+
+/* 禅意专注 - 防走神动画 */
+.zen-title.text-danger { color: #f87171 !important; font-weight: bold; font-family: 'Gochi Hand', cursive; }
+.zen-status.status-danger {
+  background: #fecaca; color: #b91c1c; border-color: #f87171;
+  animation: pulse-danger 1s infinite;
+}
+.zen-timer.blur-text { font-size: 28px; color: #ef4444; font-weight: bold; }
+.zen-breath-circle.circle-danger {
+  background: #ef4444;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+  animation: shake-hard 0.5s infinite;
+}
+
+@keyframes shake-hard {
+  0% { transform: translate(1px, 1px) rotate(0deg); }
+  10% { transform: translate(-1px, -2px) rotate(-1deg); }
+  20% { transform: translate(-3px, 0px) rotate(1deg); }
+  30% { transform: translate(3px, 2px) rotate(0deg); }
+  40% { transform: translate(1px, -1px) rotate(1deg); }
+  50% { transform: translate(-1px, 2px) rotate(-1deg); }
+  60% { transform: translate(-3px, 1px) rotate(0deg); }
+  70% { transform: translate(3px, 1px) rotate(-1deg); }
+  80% { transform: translate(-1px, -1px) rotate(1deg); }
+  90% { transform: translate(1px, 2px) rotate(0deg); }
+  100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+
+@keyframes pulse-danger {
+  0% { transform: scale(1); box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+  50% { transform: scale(1.05); box-shadow: 0 0 30px rgba(239, 68, 68, 0.8); }
+  100% { transform: scale(1); box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+}
+
+.distracted-shake {
+  /* Vivid Red Warning Style */
+  border: 4px solid #ef4444 !important;
+  background: #fecaca !important; /* Soft Red Background */
+  transform: rotate(-2deg);
+  box-shadow: 0 0 50px rgba(239, 68, 68, 0.6) !important;
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  animation: shake-hard 0.6s infinite; /* Continuous shaking */
+}
+/* Ensure text contrasts well with red bg */
+.distracted-shake .zen-title, 
+.distracted-shake .zen-timer,
+.distracted-shake .zen-quote {
+  color: #b91c1c !important; /* Dark Red Text */
+  text-shadow: 1px 1px 0px rgba(255,255,255,0.5);
+}
+
+/* Bubble Statuses */
+.bubble {
+  cursor: pointer !important;
+  font-weight: 600;
+  user-select: none;
+}
+
+.bubble:hover {
+  transform: scale(1.1);
+  border-color: #3b82f6;
+}
+
+.bubble.correct {
+  background: #dcfce7 !important;
+  border-color: #22c55e !important;
+  color: #15803d !important;
+}
+
+.bubble.wrong {
+  background: #fee2e2 !important;
+  border-color: #ef4444 !important;
+  color: #b91c1c !important;
+}
+
+.bubble.active {
+  background: #1e293b !important;
+  border-color: #1e293b !important;
+  color: #fff !important;
+  transform: scale(1.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Pagination */
+.sheet-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  margin-top: 20px;
+  padding: 12px 14px 0;
+  border-top: 2px dashed #cbd5e1;
+}
+
+/* 强化分页按钮可见度 */
+.sheet-pagination :deep(.n-button) {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #0ea5e9;
+  border: 2px solid #0284c7;
+  color: #fff;
+  box-shadow: 0 3px 0 #0b769d;
+  transition: all 0.18s ease;
+}
+
+.sheet-pagination :deep(.n-button):hover:not(.n-button--disabled) {
+  background: #38bdf8;
+  border-color: #0ea5e9;
+  box-shadow: 0 4px 0 #0a6c8f;
+  transform: translateY(-1px);
+}
+
+.sheet-pagination :deep(.n-button--disabled) {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #94a3b8;
+  box-shadow: none;
+}
+
+.sheet-pagination :deep(.n-button .n-icon) {
+  font-size: 18px;
+  color: #fff;
+}
+
+.page-num {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  min-width: 48px;
+  text-align: center;
+  padding: 6px 10px;
+  background: #f8fafc;
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  box-shadow: inset 0 -1px 0 #e2e8f0;
+}
+
+
+/* === Hand-Drawn Sketch Modal Styles === */
+.sketch-modal-card {
+  position: relative;
+  width: 450px;
+  max-width: 90vw;
+  background-color: #fffdf7; /* Cream paper */
+  /* Sketchy border */
+  border: 3px solid #2c3e50;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  padding: 30px;
+  box-shadow: 8px 8px 0px rgba(44, 62, 80, 0.2); /* Hard shadow */
+  font-family: 'Patrick Hand', cursive;
+  color: #2c3e50;
+  transform: rotate(-1deg);
+  overflow: visible;
+}
+
+/* Tape sticker effect - 胶带贴纸效果 */
+.tape-sticker {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%) rotate(1deg);
+  width: 130px;
+  height: 30px;
+  background-color: rgba(255, 230, 230, 0.7); /* Pinkish tape */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  opacity: 0.9;
+  z-index: 10;
+  backdrop-filter: blur(2px);
+}
+
+.sketch-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 25px;
+  border-bottom: 2px dashed #e0e0e0;
+  padding-bottom: 15px;
+}
+
+.sketch-title {
+  font-family: 'Gochi Hand', cursive;
+  font-size: 26px;
+  font-weight: bold;
+  color: #c0392b; 
+  letter-spacing: 1px;
+}
+
+.sketch-modal-content {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+.sketch-text {
+  font-size: 19px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.subject-highlight {
+  position: relative;
+  display: inline-block;
+  padding: 0 6px;
+  color: #2c3e50;
+  z-index: 0;
+}
+/* Highlight marker effect */
+.subject-highlight::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  width: 100%;
+  height: 10px;
+  background-color: #ffeaa7; /* Marker yellow */
+  z-index: -1;
+  transform: rotate(-0.5deg);
+  border-radius: 4px;
+}
+
+.doodle-progress {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+  position: relative;
+  padding: 10px;
+}
+
+/* Circle around progress */
+.doodle-progress::before {
+  content: '';
+  position: absolute;
+  top: -5px; right: 20%; bottom: -5px; left: 20%;
+  border: 2px solid #bdc3c7;
+  border-radius: 50% 60% 40% 70% / 60% 40% 70% 30%;
+  transform: rotate(-2deg);
+  opacity: 0.3;
+}
+
+.progress-fraction {
+  font-family: 'Gochi Hand', cursive;
+  font-size: 48px;
+  font-weight: bold;
+  display: flex;
+  align-items: baseline;
+  color: #2c3e50;
+  z-index: 1;
+}
+
+.curr { color: #d35400; /* Burnt orange */ }
+.mid-line { margin: 0 10px; color: #95a5a6; font-size: 36px; transform: rotate(15deg); }
+.total { color: #7f8c8d; font-size: 36px; }
+
+.sketch-hint {
+  font-size: 16px;
+  color: #95a5a6;
+  font-family: 'Patrick Hand', cursive;
+}
+
+.sketch-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 20px;
+  gap: 20px;
+}
+
+.sketch-btn {
+  position: relative;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 8px 16px;
+  font-family: 'Gochi Hand', cursive;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: visible;
+  outline: none;
+}
+
+.sketch-btn:hover {
+  transform: scale(1.1) rotate(-1deg);
+}
+.sketch-btn:active {
+  transform: scale(0.95);
+}
+
+.sketch-btn.secondary { color: #7f8c8d; font-size: 18px; }
+.sketch-btn.secondary:hover { color: #e74c3c; } /* Red on hover to signify reset warning */
+.sketch-btn.secondary .btn-text { border-bottom: 2px dashed #bdc3c7; }
+
+.sketch-btn.primary { 
+  color: #2c3e50; 
+  font-weight: bold;
+  font-size: 24px;
+}
+
+.btn-scribble {
+  position: absolute;
+  bottom: 0px;
+  left: -10%;
+  width: 120%;
+  height: 12px;
+  color: #2ecc71; 
+  overflow: visible;
+  opacity: 0.8;
+  z-index: 0;
+}
+
 </style>
+
+/* Sketch Modal Styles - Appended */
+.sketch-modal-card {
+  position: relative;
+  width: 90%;
+  max-width: 480px;
+  background: #fffdf7; /* Paper color */
+  border: 3px solid #2c3e50;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; /* Hand-drawn shape */
+  padding: 30px;
+  box-shadow: 
+    1px 1px 0px rgba(0,0,0,0.1),
+    8px 8px 0px rgba(44, 62, 80, 0.2);
+  font-family: 'Patrick Hand', cursive;
+  text-align: center;
+  margin: auto;
+  overflow: hidden; /* For tape containment if needed */
+}
+
+.tape-sticker {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 100px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.4); 
+  border-left: 1px dashed rgba(0,0,0,0.1);
+  border-right: 1px dashed rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  z-index: 10;
+  backdrop-filter: blur(2px);
+}
+
+.sketch-modal-header {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.sketch-title {
+  font-family: 'Gochi Hand', cursive;
+  font-size: 28px;
+  color: #2c3e50;
+  font-weight: bold;
+}
+
+.sketch-modal-content {
+  font-size: 18px;
+  color: #57606a;
+  margin-bottom: 30px;
+  line-height: 1.5;
+}
+
+.sketch-modal-footer {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.sketch-btn {
+  border: 2px solid #2c3e50;
+  background: #fff;
+  padding: 10px 24px;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  font-family: 'Gochi Hand', cursive;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sketch-btn:hover {
+  transform: scale(1.05) rotate(-1deg);
+  box-shadow: 3px 3px 0 rgba(44, 62, 80, 0.1);
+}
+
+.sketch-btn.primary {
+  background: #fcd34d; /* Yellow */
+  color: #2c3e50;
+}
+.sketch-btn.primary.warning-btn {
+  background: #ef4444; /* Red for exit */
+  color: #fff;
+  border-color: #b91c1c;
+}
+.sketch-btn.primary.warning-btn:hover { background: #dc2626; box-shadow: 3px 3px 0 #b91c1c; }
+
+.sketch-btn.secondary {
+  background: #fff;
+  color: #64748b;
+  border-color: #cbd5e1;
+}
+.sketch-btn.secondary:hover {
+  border-color: #2c3e50;
+  color: #2c3e50;
+} 
+/* End Sketch Modal Styles */

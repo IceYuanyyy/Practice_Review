@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.exam.entity.PracticeRound;
 import com.exam.entity.Question;
+import com.exam.entity.PracticeRecord;
 import com.exam.mapper.PracticeRoundMapper;
 import com.exam.service.PracticeRoundService;
 import com.exam.service.QuestionService;
@@ -196,6 +197,16 @@ public class PracticeRoundServiceImpl extends ServiceImpl<PracticeRoundMapper, P
         PracticeRound existing = baseMapper.selectByUserAndSubject(userId, subject);
         // 重置通常意味着重新在这个轮次练习，所以不应该增加轮次号
         int nextRoundNumber = existing == null ? 1 : existing.getRoundNumber();
+
+        // 清空当前轮次的练习记录，确保答题卡与历史状态被重置
+        if (existing != null && existing.getQuestionIds() != null && !existing.getQuestionIds().isEmpty()) {
+            LambdaQueryWrapper<PracticeRecord> clearWrapper = new LambdaQueryWrapper<>();
+            clearWrapper.eq(PracticeRecord::getUserId, userId)
+                        .eq(PracticeRecord::getRoundNumber, nextRoundNumber)
+                        .in(PracticeRecord::getQuestionId, existing.getQuestionIds());
+            int removed = practiceRecordMapper.delete(clearWrapper);
+            log.info("已清理当前轮次练习记录: removed={}, roundNumber={}, subject={}", removed, nextRoundNumber, subject);
+        }
         
         PracticeRound newRound = createNewRound(userId, subject, nextRoundNumber);
         if (newRound != null && !newRound.getQuestionIds().isEmpty()) {
