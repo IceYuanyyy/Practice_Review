@@ -470,6 +470,28 @@
         </div>
       </div>
     </n-modal>
+
+    <!-- Reset Confirmation Modal -->
+    <n-modal v-model:show="showResetModal" :auto-focus="false" :mask-closable="true">
+      <div class="sketch-modal-card">
+        <div class="tape-sticker"></div>
+        <div class="sketch-modal-header">
+          <span class="sketch-title">确认重置?</span>
+        </div>
+        <div class="sketch-modal-content">
+          <p>当前轮次的进度将全部清空</p>
+          <p>答题卡将变回一张白纸</p>
+        </div>
+        <div class="sketch-modal-footer">
+          <button class="sketch-btn secondary" @click="showResetModal = false">
+            <span class="btn-text">再想想</span>
+          </button>
+          <button class="sketch-btn primary warning-btn" @click="confirmResetAction">
+            <span class="btn-text">确定重置</span>
+          </button>
+        </div>
+      </div>
+    </n-modal>
   </div>
 </template>
 
@@ -1223,35 +1245,7 @@ const submitAnswer = async () => {
     practiceStore.submitAnswer(userAnswer.value)
   }
 }
-// 手动重置本轮（从按钮触发）
-const handleResetRound = () => {
-  if (!currentSubject.value) {
-    message.warning('当前为随机模式，无法重置轮次')
-    return
-  }
-  
-  dialog.warning({
-    title: '确认重置本轮',
-    content: '重置后，当前轮次的所有进度将清空，答题卡将恢复为全白。确定要重置吗？',
-    positiveText: '确定重置',
-    negativeText: '取消',
-    onPositiveClick: async () => {
-      try {
-        const resetRes = await resetRound(currentSubject.value)
-        if (resetRes.data && resetRes.data.question) {
-          applyRoundState(resetRes.data)
-          roundResults.value = {} // 清空答题卡状态
-          zenTime.value = 0 // 重置计时器
-          practiceHistory.value = [] // 清空做题历史
-          historyIndex.value = -1
-          message.success('已重置本轮，轮次计数保持不变，加油再来一次！')
-        }
-      } catch (e) {
-        message.error('重置失败，请重试')
-      }
-    }
-  })
-}
+
 
 // 添加题目到做题历史
 const addToHistory = (question, rIndex = null) => {
@@ -1513,16 +1507,42 @@ const jumpToQuestion = (question) => {
 
 
 const showExitModal = ref(false)
+const showResetModal = ref(false) // New Reset Modal State
+
 const exitPractice = () => {
   showExitModal.value = true
 }
 
 const handleConfirmExit = () => {
-  practiceStore.reset()
-  currentQuestion.value = null
-  userAnswer.value = null
-  selectedAnswers.value = [] // 重置多选答案
   showExitModal.value = false
+  router.back()
+}
+
+// 确认重置逻辑 (From Modal)
+const confirmResetAction = async () => {
+    try {
+    const resetRes = await resetRound(currentSubject.value)
+    if (resetRes.data && resetRes.data.question) {
+        applyRoundState(resetRes.data)
+        roundResults.value = {} // 清空答题卡状态
+        zenTime.value = 0 // 重置计时器
+        practiceHistory.value = [] // 清空做题历史
+        historyIndex.value = -1
+        message.success('已重置本轮，轮次计数保持不变，加油再来一次！')
+    }
+    } catch (e) {
+    message.error('重置失败，请重试')
+    }
+    showResetModal.value = false
+}
+
+// 手动重置本轮（从按钮触发）
+const handleResetRound = () => {
+  if (!currentSubject.value) {
+    message.warning('当前为随机模式，无法重置轮次')
+    return
+  }
+  showResetModal.value = true
 }
 
 </script>
