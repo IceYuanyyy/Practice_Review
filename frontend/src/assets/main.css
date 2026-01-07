@@ -141,3 +141,136 @@ body {
   background-clip: text;
   color: transparent;
 }
+
+/* =================================================================
+   Global Component Overrides (System Notifications & Loading)
+   ================================================================= */
+
+/* 1. Global Message/Toast System (Pill-shaped, Floating) */
+.n-message-container.n-message-container--top {
+  top: 32px !important;
+  pointer-events: none; /* Allow clicks through empty space */
+}
+
+.n-message-container .n-message {
+  pointer-events: auto;
+  border-radius: 99px !important; /* Full pill shape */
+  background: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  box-shadow: 
+    0 8px 40px -4px rgba(0, 0, 0, 0.1), 
+    0 2px 10px -2px rgba(0, 0, 0, 0.05),
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset !important; /* Inner highlight */
+  border: 1px solid rgba(226, 232, 240, 0.6) !important; /* Subtle border */
+  padding: 10px 24px 10px 14px !important; /* Balanced padding */
+  margin-bottom: 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  min-width: fit-content;
+}
+
+/* Icon Styling */
+.n-message .n-message__icon {
+  margin: 0 12px 0 0 !important;
+}
+
+.n-message .n-message__icon .n-icon {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 16px !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+/* Type-specific Styles */
+/* Success */
+.n-message--success-type .n-message__icon .n-icon {
+  background: #ecfdf5 !important; /* Emerald 50 */
+  color: #059669 !important;      /* Emerald 600 */
+}
+
+/* Error */
+.n-message--error-type .n-message__icon .n-icon {
+  background: #fff1f2 !important; /* Rose 50 */
+  color: #e11d48 !important;      /* Rose 600 */
+}
+
+/* Warning */
+.n-message--warning-type .n-message__icon .n-icon {
+  background: #fffbeb !important; /* Amber 50 */
+  color: #d97706 !important;      /* Amber 600 */
+}
+
+/* Info */
+.n-message--info-type .n-message__icon .n-icon {
+  background: #eff6ff !important; /* Blue 50 */
+  color: #2563eb !important;      /* Blue 600 */
+}
+
+/* Loading */
+.n-message--loading-type .n-message__icon .n-icon {
+  background: #f8fafc !important;
+  color: #64748b !important;
+  box-shadow: none !important;
+}
+
+/* Text Styling */
+.n-message .n-message__content {
+  font-family: var(--font-family-base) !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  color: #334155 !important; /* Slate 700 */
+  letter-spacing: -0.01em !important;
+  line-height: 1.5 !important;
+}
+
+/* Close Icon (if present) */
+.n-message .n-message__close {
+  margin-left: 12px !important;
+  color: #94a3b8 !important;
+  transition: color 0.2s;
+}
+
+.n-message .n-message__close:hover {
+  color: #475569 !important;
+  background: rgba(0,0,0,0.05);
+  border-radius: 50%;
+}
+
+/* 2. Loading Spinner Beautification */
+.n-spin-container .n-spin-body {
+  /* Ensure spinner is centered and clean */
+}
+
+/* Custom rail style if possible, but Naive UI uses SVG. 
+   We can affect color via variables generally, but here we can add a pulse effect */
+.n-spin--rotate {
+  animation: spin-rotate 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite !important;
+}
+
+@keyframes spin-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Global Content Skeleton/Shimmer Loading */
+.skeleton-loading {
+  background: linear-gradient(
+    90deg,
+    var(--color-n-100) 25%,
+    var(--color-n-200) 50%,
+    var(--color-n-100) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite ease-in-out;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

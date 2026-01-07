@@ -75,7 +75,12 @@
             <div class="side-content">
                 <div class="subject-card">
                   <div class="subject-label">科目</div>
-                  <div class="subject-title">{{ currentSubject || '随机练习' }}</div>
+                  <div class="subject-main-text">
+                    {{ currentSubject || '随机练习' }}
+                  </div>
+                  <div class="subject-sub-text" v-if="isWrongBookMode">
+                    错题模式
+                  </div>
                 </div>
                 
                 <div class="stat-grid">
@@ -100,11 +105,14 @@
             <!-- 卡片 2: 禅意专注 (New Creative Card) -->
             <n-card :bordered="false" class="side-card zen-card glass" :class="{ 'distracted-shake': isDistracted }">
               <div class="zen-header">
-                <div class="zen-title" :class="{ 'text-danger': isDistracted }">
-                  {{ isDistracted ? '哎呀！' : '禅意专注' }}
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <n-switch v-model:value="isZenModeEnabled" size="small" />
+                  <div class="zen-title" :class="{ 'text-danger': isDistracted }">
+                    {{ isDistracted ? '哎呀！' : '禅意专注' }}
+                  </div>
                 </div>
                 <div class="zen-status" :class="{ 'status-danger': isDistracted }">
-                  {{ isDistracted ? '走神啦 😮' : '专注中...' }}
+                  {{ !isZenModeEnabled ? '未开启' : (isDistracted ? '走神啦 😮' : '专注中...') }}
                 </div>
               </div>
               <div class="zen-content">
@@ -385,9 +393,9 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useMessage, useDialog, NCard, NForm, NFormItem, NGrid, NGridItem, NSelect, NButton, NTag, NText, NIcon, NModal, NInput, NProgress, NScrollbar } from 'naive-ui'
+import { useMessage, useDialog, NCard, NForm, NFormItem, NGrid, NGridItem, NSelect, NButton, NTag, NText, NIcon, NModal, NInput, NProgress, NScrollbar, NSwitch } from 'naive-ui'
 import { CloseOutline, CheckmarkCircle, CloseCircle, CheckmarkOutline, SearchOutline, ArrowBackOutline, SchoolOutline, BookOutline, RefreshOutline } from '@vicons/ionicons5'
 import { getRandomQuestion } from '@/api/question'
 import { submitAnswer as submitAnswerApi, startRound, nextRoundQuestion, prevRoundQuestion, resetRound, searchQuestions, startWrongBookPractice, nextWrongQuestion, jumpRoundQuestion, getRoundResults } from '@/api/practice'
@@ -509,6 +517,7 @@ const zenTimer = ref(null)
 const zenQuote = ref('')
 // 新增：防走神状态
 const isDistracted = ref(false)
+const isZenModeEnabled = ref(false)
 const zenQuotes = [
   "心如止水，专注当下。",
   "每一点进步，都值得庆祝。",
@@ -535,8 +544,18 @@ const formatZenTime = (seconds) => {
 // 新增：容器 Ref
 const practiceContainerRef = ref(null)
 
-const handleMouseLeave = () => { isDistracted.value = true }
+const handleMouseLeave = () => { 
+  if (isZenModeEnabled.value) {
+    isDistracted.value = true 
+  }
+}
 const handleMouseEnter = () => { isDistracted.value = false }
+
+watch(isZenModeEnabled, (newVal) => {
+  if (!newVal) {
+    isDistracted.value = false
+  }
+})
 
 onMounted(async () => {
   // 挂载防走神监听 - 仅针对练习区域容器
@@ -827,6 +846,11 @@ const startWrongBookPracticeMode = async () => {
       return
     }
     
+    // Set currentSubject for display in "Current Status" panel
+    if (wrongBookSubject.value) {
+      currentSubject.value = wrongBookSubject.value
+    }
+
     currentQuestion.value = res.data.question
     currentIndex.value = res.data.currentIndex
     totalCount.value = res.data.totalCount
@@ -1935,16 +1959,80 @@ const exitPractice = () => {
 
 /* Left Panel Specifics */
 .subject-card {
-  background: #f8fafc;
+  position: relative;
+  background: #fff;
   padding: 16px;
   border-radius: 12px;
-  border: 2px solid #e2e8f0;
-  transition: all 0.2s;
+  border: 2px solid #2c3e50;
+  box-shadow: 4px 4px 0 rgba(44, 62, 80, 0.1);
+  overflow: hidden;
+  text-align: center;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.subject-card:hover { border-color: #94a3b8; }
 
-.subject-label { font-size: 14px; color: #64748b; margin-bottom: 4px; font-weight: 600; }
-.subject-title { font-weight: 800; font-size: 20px; color: #334155; line-height: 1.3; font-family: 'Gochi Hand', cursive; }
+.subject-card:hover { 
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 6px 6px 0 rgba(44, 62, 80, 0.15);
+}
+
+/* Notebook lines background effect */
+.subject-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: linear-gradient(#f1f5f9 1px, transparent 1px);
+  background-size: 100% 20px;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Red line margin effect */
+.subject-card::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; left: 20px;
+  width: 2px;
+  background: #fca5a5;
+  opacity: 0.6;
+}
+
+.subject-label { 
+  position: relative;
+  font-size: 12px; 
+  color: #94a3b8; 
+  margin-bottom: 2px; 
+  font-weight: 700; 
+  text-align: right;
+  z-index: 1;
+}
+
+.subject-main-text { 
+  position: relative;
+  font-weight: 800; 
+  font-size: 24px; 
+  color: #2c3e50; 
+  line-height: 1.2; 
+  font-family: 'Gochi Hand', cursive; 
+  z-index: 1;
+  padding-left: 10px; /* Offset for red line */
+}
+
+.subject-sub-text {
+  position: relative;
+  display: inline-block;
+  background: #fee2e2;
+  color: #ef4444;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 2px dashed #fca5a5;
+  transform: rotate(-2deg);
+  margin-top: 6px;
+  box-shadow: 2px 2px 0 rgba(239, 68, 68, 0.1);
+  z-index: 1;
+  font-family: 'Patrick Hand', cursive;
+}
 
 .stat-grid {
   display: grid;

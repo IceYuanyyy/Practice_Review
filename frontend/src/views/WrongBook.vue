@@ -114,6 +114,9 @@
                <div class="doodle-tag" :class="question.type">
                 {{ getTypeLabel(question.type) }}
               </div>
+              <div class="doodle-tag subject-tag">
+                {{ question.subject }}
+              </div>
             </div>
 
             <p class="question-text">{{ question.content }}</p>
@@ -661,6 +664,7 @@ const retakeQuestion = (question) => {
 .doodle-tag.single-choice { color: #0284c7; }
 .doodle-tag.multiple-choice { color: #d97706; }
 .doodle-tag.judge { color: #16a34a; }
+.doodle-tag.subject-tag { color: #64748b; margin-left: 8px; }
 
 .question-text {
   flex: 1;
