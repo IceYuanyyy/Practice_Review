@@ -14,7 +14,7 @@
     >
       <div class="logo-container" :class="{ collapsed: collapsed }">
         <div class="logo-icon-bg">
-          <n-icon :component="SchoolOutline" size="28" color="#fff" />
+          <n-icon :component="RocketOutline" size="28" color="#fff" />
         </div>
         <transition name="fade">
           <div v-if="!collapsed" class="brand-text">
@@ -75,7 +75,7 @@
       <n-drawer-content body-content-style="padding: 0;">
          <div class="logo-container">
           <div class="logo-icon-bg">
-            <n-icon :component="SchoolOutline" size="28" color="#fff" />
+            <n-icon :component="RocketOutline" size="28" color="#fff" />
           </div>
           <div class="brand-text">
             <span class="brand-title">Exam Master</span>

@@ -46,7 +46,7 @@ const routes = [
         path: '/practice',
         name: 'Practice',
         component: () => import('@/views/Practice.vue'),
-        meta: { title: '开始练习' }
+        meta: { title: '沉浸刷题' }
       },
       {
         path: '/wrong-book',
