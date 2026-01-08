@@ -62,15 +62,24 @@ public class SubjectController {
      * @return 科目列表（包含题目数量统计）
      */
     @GetMapping
-    public Result<List<Subject>> getAllSubjects() {
+    public Result<List<Subject>> getAllSubjects(@RequestParam(required = false) Long ownerId) {
         Long userId = getCurrentUserId();
         boolean isAdmin = isAdmin();
         
         // 查询当前用户可见的所有题目
         QueryWrapper<Question> wrapper = new QueryWrapper<>();
         if (!isAdmin) {
-            // 普通用户：只能看到自己的题目和公共题库
-            wrapper.and(w -> w.isNull("owner_id").or().eq("owner_id", userId));
+            // 普通用户：仅查看自己的题目
+            wrapper.eq("owner_id", userId);
+        } else {
+            // 管理员: 支持按 ownerId 筛选
+            if (ownerId != null) {
+                if (ownerId == -1L) {
+                    wrapper.isNull("owner_id");
+                } else {
+                    wrapper.eq("owner_id", ownerId);
+                }
+            }
         }
         // 管理员：可以看到所有题目（无额外条件）
         

@@ -242,6 +242,11 @@ const loadSubjectStats = async () => {
       if (subjectOptions.value.length === 1) {
         selectedSubject.value = subjectOptions.value[0].value
       }
+    } else {
+      // 清空后没有错题，重置数据
+      subjectStats.value = {}
+      subjectOptions.value = []
+      selectedSubject.value = null
     }
   } catch (error) {
     console.error('加载科目统计失败:', error)
@@ -303,10 +308,15 @@ const clearWrongBook = () => {
     onPositiveClick: async () => {
       try {
         await clearWrongBookApi()
+        // 清空本地状态
         practiceStore.wrongQuestions = []
+        wrongQuestions.value = []
+        totalCount.value = 0
+        currentPage.value = 1
         message.success('错题墙已清空')
-        await loadWrongQuestions()
+        // 刷新数据
         await loadSubjectStats()
+        await loadWrongQuestions()
       } catch (error) {
         message.error('操作失败')
       }

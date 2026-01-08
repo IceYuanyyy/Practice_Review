@@ -6,6 +6,7 @@ import com.exam.entity.User;
 import com.exam.entity.UserOperationLog;
 import com.exam.mapper.UserOperationLogMapper;
 import com.exam.service.UserService;
+import com.exam.util.IpUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -76,7 +77,8 @@ public class OperationLogAspect {
         }
         
         // 获取请求信息
-        String requestIp = getClientIp();
+        String requestIp = "unknown";
+        String requestLocation = "未知位置";
         String requestMethod = "";
         String requestUrl = "";
         String requestParams = "";
@@ -85,7 +87,8 @@ public class OperationLogAspect {
             ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
             if (attributes != null) {
                 HttpServletRequest request = attributes.getRequest();
-                requestIp = getClientIp(request);
+                requestIp = IpUtil.getClientIp(request);
+                requestLocation = IpUtil.getIpLocation(requestIp);
                 requestMethod = request.getMethod();
                 requestUrl = request.getRequestURI();
                 // 简化参数记录，避免敏感信息
@@ -120,6 +123,7 @@ public class OperationLogAspect {
                 opLog.setRequestUrl(requestUrl);
                 opLog.setRequestParams(requestParams);
                 opLog.setRequestIp(requestIp);
+                opLog.setRequestLocation(requestLocation);
                 opLog.setOperationStatus(operationStatus);
                 opLog.setErrorMessage(errorMessage);
                 opLog.setCostTime(costTime);
@@ -133,41 +137,5 @@ public class OperationLogAspect {
         }
         
         return result;
-    }
-    
-    /**
-     * 获取客户端IP
-     */
-    private String getClientIp() {
-        try {
-            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            if (attributes != null) {
-                return getClientIp(attributes.getRequest());
-            }
-        } catch (Exception e) {
-            log.debug("获取IP失败: {}", e.getMessage());
-        }
-        return "unknown";
-    }
-    
-    /**
-     * 从请求中获取客户端IP
-     */
-    private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-        // 多个IP时取第一个
-        if (ip != null && ip.contains(",")) {
-            ip = ip.split(",")[0].trim();
-        }
-        return ip;
     }
 }

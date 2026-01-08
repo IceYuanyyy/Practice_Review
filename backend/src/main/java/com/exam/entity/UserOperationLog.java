@@ -47,9 +47,34 @@ public class UserOperationLog {
     private String operationData;
 
     /**
+     * 原始文件内容(Base64编码)
+     */
+    private String sourceFileContent;
+
+    /**
+     * 原始文件名
+     */
+    private String sourceFileName;
+
+    /**
+     * 结果文件内容(Base64编码)
+     */
+    private String resultFileContent;
+
+    /**
+     * 结果文件名
+     */
+    private String resultFileName;
+
+    /**
      * 请求IP
      */
     private String requestIp;
+
+    /**
+     * 请求IP归属地
+     */
+    private String requestLocation;
 
     /**
      * 请求URL

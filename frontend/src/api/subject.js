@@ -3,8 +3,8 @@ import request from './request'
 /**
  * 获取所有科目列表
  */
-export const getAllSubjects = () => {
-  return request.get('/subjects')
+export const getAllSubjects = (ownerId) => {
+  return request.get('/subjects', { params: { ownerId } })
 }
 
 /**

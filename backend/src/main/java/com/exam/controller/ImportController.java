@@ -307,4 +307,199 @@ public class ImportController {
             log.error("导出失败", e);
         }
     }
+
+    /**
+     * 保存题库转换日志
+     * 前端将原始TXT和转换后的Excel的Base64内容上传
+     * 
+     * @param request HTTP请求
+     * @return 保存结果
+     */
+    @PostMapping("/convert-log")
+    public Result<Map<String, Object>> saveConvertLog(
+            @RequestBody Map<String, Object> data,
+            javax.servlet.http.HttpServletRequest request) {
+        
+        long startTime = System.currentTimeMillis();
+        
+        Long userId = getCurrentUserId();
+        String username = "unknown";
+        try {
+            com.exam.entity.User user = userService.getById(userId);
+            if (user != null) {
+                username = user.getUsername();
+            }
+        } catch (Exception e) {
+            log.warn("获取用户信息失败", e);
+        }
+
+        // 获取参数
+        String sourceFileName = (String) data.get("sourceFileName");
+        String sourceFileContent = (String) data.get("sourceFileContent");
+        String resultFileName = (String) data.get("resultFileName");
+        String resultFileContent = (String) data.get("resultFileContent");
+        String subjectName = (String) data.get("subjectName");
+        Integer choiceCount = data.get("choiceCount") != null ? ((Number) data.get("choiceCount")).intValue() : 0;
+        Integer judgeCount = data.get("judgeCount") != null ? ((Number) data.get("judgeCount")).intValue() : 0;
+
+        // 创建操作日志
+        com.exam.entity.UserOperationLog opLog = new com.exam.entity.UserOperationLog();
+        opLog.setUserId(userId);
+        opLog.setUsername(username);
+        opLog.setOperationType("CONVERT");
+        opLog.setOperationDesc("题库转换: " + sourceFileName + " → " + resultFileName + " (选择题:" + choiceCount + ", 判断题:" + judgeCount + ")");
+        opLog.setRequestMethod(request.getMethod());
+        opLog.setRequestUrl(request.getRequestURI());
+        opLog.setRequestIp(getClientIp(request));
+        opLog.setOperationTime(java.time.LocalDateTime.now());
+        
+        // 记录文件信息
+        opLog.setSourceFileName(sourceFileName);
+        opLog.setSourceFileContent(sourceFileContent);
+        opLog.setResultFileName(resultFileName);
+        opLog.setResultFileContent(resultFileContent);
+        
+        // 记录科目和统计信息
+        Map<String, Object> dataMap = new HashMap<>();
+        dataMap.put("subjectName", subjectName);
+        dataMap.put("choiceCount", choiceCount);
+        dataMap.put("judgeCount", judgeCount);
+        try {
+            opLog.setOperationData(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(dataMap));
+        } catch (Exception e) {
+            log.warn("JSON序列化失败", e);
+        }
+        
+        opLog.setOperationStatus(1);
+        opLog.setCostTime(System.currentTimeMillis() - startTime);
+        
+        userOperationLogMapper.insert(opLog);
+        
+        log.info("用户 {} 保存转换日志: {} -> {}", username, sourceFileName, resultFileName);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("logId", opLog.getId());
+        
+        return Result.success("转换日志保存成功", result);
+    }
+
+    /**
+     * 下载转换日志中的原始文件
+     * 
+     * @param logId 日志ID
+     * @param response HTTP响应
+     */
+    @GetMapping("/convert-log/{logId}/source")
+    public void downloadSourceFile(
+            @PathVariable Long logId,
+            HttpServletResponse response) {
+        
+        // 检查权限：只有管理员或日志所有者可以下载
+        Long userId = getCurrentUserId();
+        boolean isAdmin = isAdmin();
+        
+        com.exam.entity.UserOperationLog opLog = userOperationLogMapper.selectById(logId);
+        if (opLog == null) {
+            try {
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"code\":404,\"message\":\"日志不存在\"}");
+            } catch (IOException e) {
+                log.error("响应错误", e);
+            }
+            return;
+        }
+        
+        if (!isAdmin && !opLog.getUserId().equals(userId)) {
+            try {
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"code\":403,\"message\":\"无权访问\"}");
+            } catch (IOException e) {
+                log.error("响应错误", e);
+            }
+            return;
+        }
+        
+        if (opLog.getSourceFileContent() == null || opLog.getSourceFileName() == null) {
+            try {
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"code\":404,\"message\":\"文件不存在\"}");
+            } catch (IOException e) {
+                log.error("响应错误", e);
+            }
+            return;
+        }
+        
+        try {
+            byte[] fileBytes = java.util.Base64.getDecoder().decode(opLog.getSourceFileContent());
+            
+            response.setContentType("text/plain;charset=UTF-8");
+            String fileName = URLEncoder.encode(opLog.getSourceFileName(), "UTF-8");
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName);
+            response.getOutputStream().write(fileBytes);
+            response.getOutputStream().flush();
+            
+        } catch (IOException e) {
+            log.error("下载原始文件失败", e);
+        }
+    }
+
+    /**
+     * 下载转换日志中的结果文件(Excel)
+     * 
+     * @param logId 日志ID
+     * @param response HTTP响应
+     */
+    @GetMapping("/convert-log/{logId}/result")
+    public void downloadResultFile(
+            @PathVariable Long logId,
+            HttpServletResponse response) {
+        
+        // 检查权限：只有管理员或日志所有者可以下载
+        Long userId = getCurrentUserId();
+        boolean isAdmin = isAdmin();
+        
+        com.exam.entity.UserOperationLog opLog = userOperationLogMapper.selectById(logId);
+        if (opLog == null) {
+            try {
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"code\":404,\"message\":\"日志不存在\"}");
+            } catch (IOException e) {
+                log.error("响应错误", e);
+            }
+            return;
+        }
+        
+        if (!isAdmin && !opLog.getUserId().equals(userId)) {
+            try {
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"code\":403,\"message\":\"无权访问\"}");
+            } catch (IOException e) {
+                log.error("响应错误", e);
+            }
+            return;
+        }
+        
+        if (opLog.getResultFileContent() == null || opLog.getResultFileName() == null) {
+            try {
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"code\":404,\"message\":\"文件不存在\"}");
+            } catch (IOException e) {
+                log.error("响应错误", e);
+            }
+            return;
+        }
+        
+        try {
+            byte[] fileBytes = java.util.Base64.getDecoder().decode(opLog.getResultFileContent());
+            
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            String fileName = URLEncoder.encode(opLog.getResultFileName(), "UTF-8");
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName);
+            response.getOutputStream().write(fileBytes);
+            response.getOutputStream().flush();
+            
+        } catch (IOException e) {
+            log.error("下载结果文件失败", e);
+        }
+    }
 }

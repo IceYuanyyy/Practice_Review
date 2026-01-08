@@ -2,11 +2,13 @@ import request from './request'
 
 /**
  * 获取所有用户列表（仅管理员）
+ * 非管理员调用会返回403，使用静默模式不显示错误提示
  */
 export function getAllUsers() {
     return request({
         url: '/user/list',
-        method: 'get'
+        method: 'get',
+        silent: true  // 静默模式，不显示错误提示
     })
 }
 

@@ -70,7 +70,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public String login(LoginDTO loginDTO, String ip, String userAgent) {
+    public String login(LoginDTO loginDTO, String ip, String location, String userAgent) {
         // 查询用户
         User user = baseMapper.selectByUsername(loginDTO.getUsername());
         
@@ -78,6 +78,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         UserLoginLog loginLog = new UserLoginLog();
         loginLog.setUsername(loginDTO.getUsername());
         loginLog.setLoginIp(ip);
+        loginLog.setLoginLocation(location);  // 设置登录地点
         loginLog.setUserAgent(userAgent);
         loginLog.setLoginTime(LocalDateTime.now());
         

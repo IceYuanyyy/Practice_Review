@@ -166,6 +166,7 @@ import {
   ListOutline, CheckmarkCircleOutline, KeyOutline
 } from '@vicons/ionicons5'
 import * as XLSX from 'xlsx'
+import { saveConvertLog } from '@/api/admin'
 
 const message = useMessage()
 const fileName = ref('')
@@ -186,10 +187,6 @@ const handleFileSelect = (options) => {
   fileName.value = file.name
 
   const reader = new FileReader()
-  reader.onload = (e) => {
-    fileContent.value = e.target.result
-    parseQuestions()
-  }
   reader.onload = (e) => {
     fileContent.value = e.target.result
     parseQuestions()
@@ -359,7 +356,7 @@ const parseAnswers = (answerText) => {
   return answers
 }
 
-const convertToExcel = () => {
+const convertToExcel = async () => {
   converting.value = true
   
   try {
@@ -431,9 +428,32 @@ const convertToExcel = () => {
     
     const customName = exportFileName.value.trim() || '题库'
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
-    const filename = `${customName}_${timestamp}.xlsx`
+    const resultFilename = `${customName}_${timestamp}.xlsx`
     
-    XLSX.writeFile(wb, filename)
+    // 生成 Excel 的 ArrayBuffer
+    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+    
+    // 转换为 Base64
+    const sourceFileBase64 = btoa(unescape(encodeURIComponent(fileContent.value)))
+    const resultFileBase64 = btoa(String.fromCharCode.apply(null, new Uint8Array(excelBuffer)))
+    
+    // 保存转换日志到服务器
+    try {
+      await saveConvertLog({
+        sourceFileName: fileName.value,
+        sourceFileContent: sourceFileBase64,
+        resultFileName: resultFilename,
+        resultFileContent: resultFileBase64,
+        subjectName: subjectName.value || '未分类',
+        choiceCount: choiceQuestions.length,
+        judgeCount: judgeQuestions.length
+      })
+    } catch (logError) {
+      console.warn('保存转换日志失败，但不影响下载:', logError)
+    }
+    
+    // 下载文件
+    XLSX.writeFile(wb, resultFilename)
     
     message.success('Excel 文件已生成并下载！')
     currentStep.value = 3 // 完成

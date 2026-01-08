@@ -6,6 +6,7 @@ import com.exam.dto.LoginDTO;
 import com.exam.dto.RegisterDTO;
 import com.exam.dto.UserVO;
 import com.exam.service.UserService;
+import com.exam.util.IpUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -40,13 +41,15 @@ public class AuthController {
     @PostMapping("/login")
     public Result<Map<String, Object>> login(@Validated @RequestBody LoginDTO loginDTO, 
                                               HttpServletRequest request) {
-        // 获取客户端IP
-        String ip = getClientIp(request);
+        // 获取客户端真实IP
+        String ip = IpUtil.getClientIp(request);
+        // 获取IP归属地
+        String location = IpUtil.getIpLocation(ip);
         // 获取 User-Agent
         String userAgent = request.getHeader("User-Agent");
 
-        // 执行登录
-        String token = userService.login(loginDTO, ip, userAgent);
+        // 执行登录（传入位置信息）
+        String token = userService.login(loginDTO, ip, location, userAgent);
 
         // 获取用户信息
         UserVO userVO = userService.getCurrentUser();
@@ -114,30 +117,4 @@ public class AuthController {
         return Result.success(result);
     }
 
-    /**
-     * 获取客户端真实IP
-     */
-    private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("HTTP_CLIENT_IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-        // 多个代理的情况，取第一个IP
-        if (ip != null && ip.contains(",")) {
-            ip = ip.split(",")[0].trim();
-        }
-        return ip;
-    }
 }

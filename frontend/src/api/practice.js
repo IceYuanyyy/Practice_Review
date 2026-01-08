@@ -47,11 +47,11 @@ export function clearWrongBook() {
 /**
  * 开始或继续轮次练习
  */
-export function startRound(subject) {
+export function startRound(subject, ownerId) {
   return request({
     url: '/practice/round/start',
     method: 'post',
-    params: { subject }
+    params: { subject, ownerId }
   })
 }
 
@@ -91,11 +91,11 @@ export function getRoundProgress(subject) {
 /**
  * 重置轮次（开始新一轮）
  */
-export function resetRound(subject) {
+export function resetRound(subject, ownerId) {
   return request({
     url: '/practice/round/reset',
     method: 'post',
-    params: { subject }
+    params: { subject, ownerId }
   })
 }
 

@@ -13,7 +13,7 @@
 <script setup>
 import { h, defineComponent, onMounted } from 'vue'
 import { RouterView } from 'vue-router'
-import { NConfigProvider, NMessageProvider, NDialogProvider, NNotificationProvider, useMessage } from 'naive-ui'
+import { NConfigProvider, NMessageProvider, NDialogProvider, NNotificationProvider, useMessage, useDialog } from 'naive-ui'
 import { initMouseEffects } from '@/utils/mouseEffects'
 
 // 全局 Provider 组件，用于暴露 message 到 window
@@ -22,10 +22,33 @@ const GlobalProvider = defineComponent({
   setup() {
     // 将 message 暴露到 window，供 request.js 使用
     window.$message = useMessage()
+    const dialog = useDialog()
     
-    // 初始化全局鼠标特效
+    // 初始化全局鼠标特效和显示系统更新提示
     onMounted(() => {
       initMouseEffects()
+      
+      // 检查是否已经显示过系统更新提示
+      const hasShownNotice = localStorage.getItem('systemUpdateNoticeShown_2026')
+      if (!hasShownNotice) {
+        // 延迟500ms显示弹窗，确保页面已经加载完成
+        setTimeout(() => {
+          dialog.warning({
+            title: '🔔 温馨提示',
+            content: '系统已完成升级更新！\n\n由于服务器重新部署，之前的用户数据已清空。\n\n非常抱歉给您带来不便，请重新注册账号并导入您的数据。\n\n感谢您的理解与支持！',
+            positiveText: '我知道了',
+            maskClosable: false,
+            closable: false,
+            style: {
+              width: '480px'
+            },
+            onPositiveClick: () => {
+              // 用户点击确认后，记录已显示过提示，避免重复显示
+              localStorage.setItem('systemUpdateNoticeShown_2026', 'true')
+            }
+          })
+        }, 500)
+      }
     })
     
     return () => h(RouterView)

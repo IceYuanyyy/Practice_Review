@@ -61,6 +61,17 @@
                 <n-icon :component="SearchOutline" class="search-icon" />
               </template>
             </n-input>
+            <n-select
+              v-if="userOptions.length > 0"
+              v-model:value="filters.ownerId"
+              placeholder="导入用户"
+              searchable
+              clearable
+              size="medium"
+              class="filter-select"
+              :options="userOptions"
+              @update:value="handleFilterChange"
+            />
             
             <n-select
               v-model:value="filters.subject"
@@ -104,7 +115,19 @@
           @update:page-size="handlePageSizeChange"
           striped
           class="custom-table"
-        />
+        >
+          <template #empty>
+            <div class="empty-state">
+              <div class="empty-icon">📚</div>
+              <div class="empty-title">暂无题库</div>
+              <div class="empty-desc">请点击上方「导入」按钮导入题目</div>
+              <n-button type="primary" size="medium" @click="showImportModal = true" style="margin-top: 16px;">
+                <template #icon><n-icon :component="CloudUploadOutline" /></template>
+                立即导入
+              </n-button>
+            </div>
+          </template>
+        </n-data-table>
       </n-card>
     </n-space>
 
@@ -235,6 +258,12 @@
               <n-grid-item>
                 <n-form-item label="D" path="optionD" label-width="30px"><n-input v-model:value="formData.optionD" placeholder="选项D" /></n-form-item>
               </n-grid-item>
+              <n-grid-item>
+                <n-form-item label="E" path="optionE" label-width="30px"><n-input v-model:value="formData.optionE" placeholder="选项E（可选）" /></n-form-item>
+              </n-grid-item>
+              <n-grid-item>
+                <n-form-item label="F" path="optionF" label-width="30px"><n-input v-model:value="formData.optionF" placeholder="选项F（可选）" /></n-form-item>
+              </n-grid-item>
             </n-grid>
           </div>
         </div>
@@ -248,8 +277,8 @@
             <n-grid-item>
                <n-form-item label="答案" path="answer">
                   <n-select v-if="formData.type === 'judge'" v-model:value="formData.answer" :options="[{label:'正确', value:'正确'}, {label:'错误', value:'错误'}]" placeholder="请选择" />
-                  <n-select v-else-if="['single-choice', 'choice'].includes(formData.type)" v-model:value="formData.answer" :options="['A','B','C','D'].map(v=>({label: v, value: v}))" placeholder="请选择" />
-                  <n-input v-else v-model:value="formData.answer" placeholder="A/B/C/D 或 '正确'/'错误'" />
+                  <n-select v-else-if="['single-choice', 'choice'].includes(formData.type)" v-model:value="formData.answer" :options="['A','B','C','D','E','F'].map(v=>({label: v, value: v}))" placeholder="请选择" />
+                  <n-input v-else v-model:value="formData.answer" placeholder="多选请输入如 ABCD、ABCDEF" />
               </n-form-item>
             </n-grid-item>
           </n-grid>
@@ -387,7 +416,8 @@ const clearPreview = computed(() => {
 const filters = reactive({
   subject: null,
   type: null,
-  keyword: ''
+  keyword: '',
+  ownerId: null
 })
 
 // 分页状态
@@ -436,6 +466,8 @@ const formData = reactive({
   optionB: '',
   optionC: '',
   optionD: '',
+  optionE: '',
+  optionF: '',
   answer: '',
   analysis: '',
   difficulty: 'medium'
@@ -472,7 +504,7 @@ const loadSubjects = async () => {
     }
   } catch (error) {
     console.error('加载科目列表失败', error)
-    message.error('加载科目列表失败')
+    // 静默处理，不显示错误提示
   }
 }
 
@@ -491,8 +523,7 @@ const loadUsers = async () => {
       ]
     }
   } catch (error) {
-    console.error('加载用户列表失败', error)
-    // 非管理员会失败，静默处理
+    // 非管理员会失败，静默处理，不输出任何错误
   } finally {
     loadingUsers.value = false
   }
@@ -673,6 +704,7 @@ const loadQuestions = async () => {
     if (filters.subject) params.subject = filters.subject
     if (filters.type) params.type = filters.type
     if (filters.keyword) params.keyword = filters.keyword
+    if (filters.ownerId) params.ownerId = filters.ownerId
     
     //console.log('loadQuestions params:', params)
     
@@ -690,8 +722,18 @@ const loadQuestions = async () => {
 
 // 编辑题目
 const handleEdit = (row) => {
+  // 先重置表单，确保所有字段都是干净的
+  resetForm()
+  
   editingQuestion.value = row
-  Object.assign(formData, row)
+  
+  // 复制基本字段
+  formData.type = row.type || 'single-choice'
+  formData.subject = row.subject || ''
+  formData.content = row.content || ''
+  formData.answer = row.answer || ''
+  formData.analysis = row.analysis || ''
+  formData.difficulty = row.difficulty || 'medium'
   
   // 解析选项
   if ((row.type === 'single-choice' || row.type === 'multiple-choice' || row.type === 'choice') && row.options) {
@@ -702,8 +744,15 @@ const handleEdit = (row) => {
         : JSON.parse(row.options)
       
       options.forEach(opt => {
-        const [key, value] = opt.split(':')
-        formData[`option${key}`] = value
+        // 支持 "A:内容" 或 "A: 内容" 格式
+        const colonIndex = opt.indexOf(':')
+        if (colonIndex !== -1) {
+          const key = opt.substring(0, colonIndex).trim().toUpperCase()
+          const value = opt.substring(colonIndex + 1).trim()
+          if (['A', 'B', 'C', 'D', 'E', 'F'].includes(key)) {
+            formData[`option${key}`] = value
+          }
+        }
       })
     } catch (e) {
       console.error('解析选项失败', e)
@@ -738,6 +787,8 @@ const handleSubmit = async () => {
       if (data.optionB) options.push(`B:${data.optionB}`)
       if (data.optionC) options.push(`C:${data.optionC}`)
       if (data.optionD) options.push(`D:${data.optionD}`)
+      if (data.optionE) options.push(`E:${data.optionE}`)
+      if (data.optionF) options.push(`F:${data.optionF}`)
       // 后端期望的是数组，不是 JSON 字符串
       data.options = options
     }
@@ -747,6 +798,8 @@ const handleSubmit = async () => {
     delete data.optionB
     delete data.optionC
     delete data.optionD
+    delete data.optionE
+    delete data.optionF
     
     if (editingQuestion.value) {
       await updateQuestion(editingQuestion.value.id, data)
@@ -776,6 +829,8 @@ const resetForm = () => {
     optionB: '',
     optionC: '',
     optionD: '',
+    optionE: '',
+    optionF: '',
     answer: '',
     analysis: '',
     difficulty: 'medium'
@@ -1048,5 +1103,33 @@ onMounted(() => {
   border-radius: 8px;
   border: 1px dashed rgba(0,0,0,0.1);
   margin-bottom: 16px;
+}
+
+/* 空状态样式 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #64748b;
+}
+
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.empty-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 8px;
+}
+
+.empty-desc {
+  font-size: 14px;
+  color: #94a3b8;
 }
 </style>

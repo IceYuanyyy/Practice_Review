@@ -58,7 +58,7 @@
 
     <!-- Detail Modal -->
     <n-modal v-model:show="showDetail" transform-origin="center">
-      <div class="comic-modal" :style="{ width: isImportLog ? '800px' : '500px' }">
+      <div class="comic-modal" :style="{ width: (isImportLog || isConvertLog) ? '800px' : '500px' }">
         <div class="modal-header">
            <h2>ACTION DETAILS #{{ selectedLog?.id }}</h2>
         </div>
@@ -69,6 +69,9 @@
            </div>
            <div class="info-row">
              <p><strong>IP:</strong> {{ selectedLog.requestIp }}</p>
+             <p><strong>位置:</strong> {{ selectedLog.requestLocation || '未知位置' }}</p>
+           </div>
+           <div class="info-row">
              <p><strong>TIME:</strong> {{ formatTime(selectedLog.operationTime) }}</p>
            </div>
            
@@ -106,6 +109,44 @@
               />
            </div>
 
+           <!-- Convert Specific Details -->
+           <div v-if="isConvertLog" class="convert-details">
+              <n-divider dashed>CONVERTED FILES</n-divider>
+              <n-space vertical :size="12">
+                <n-space justify="space-between" align="center">
+                  <n-text><strong>原始文件:</strong> {{ selectedLog.sourceFileName || '无' }}</n-text>
+                  <n-button 
+                    size="small" 
+                    type="info" 
+                    :disabled="!selectedLog.sourceFileName"
+                    @click="handleDownloadConvertSource(selectedLog)"
+                  >
+                    <template #icon><n-icon :component="DocumentTextOutline"/></template>
+                    下载 TXT
+                  </n-button>
+                </n-space>
+                <n-space justify="space-between" align="center">
+                  <n-text><strong>转换结果:</strong> {{ selectedLog.resultFileName || '无' }}</n-text>
+                  <n-button 
+                    size="small" 
+                    type="primary"
+                    :disabled="!selectedLog.resultFileName"
+                    @click="handleDownloadConvertResult(selectedLog)"
+                  >
+                    <template #icon><n-icon :component="CloudDownloadOutline"/></template>
+                    下载 Excel
+                  </n-button>
+                </n-space>
+                
+                <!-- 转换统计 -->
+                <div v-if="getConvertStats(selectedLog)" class="convert-stats">
+                  <n-tag type="info" size="small">选择题: {{ getConvertStats(selectedLog).choiceCount || 0 }}</n-tag>
+                  <n-tag type="success" size="small">判断题: {{ getConvertStats(selectedLog).judgeCount || 0 }}</n-tag>
+                  <n-tag type="warning" size="small">科目: {{ getConvertStats(selectedLog).subjectName || '未分类' }}</n-tag>
+                </div>
+              </n-space>
+           </div>
+
            <div class="result-stamp" :class="selectedLog.operationStatus === 1 ? 'success' : 'fail'">
               {{ selectedLog.operationStatus === 1 ? 'SUCCESS' : 'FAILURE' }}
            </div>
@@ -137,9 +178,10 @@ import {
   CodeWorkingOutline,
   DocumentTextOutline,
   CloudDownloadOutline,
-  TrashOutline
+  TrashOutline,
+  SwapHorizontalOutline
 } from '@vicons/ionicons5'
-import { getOperationLogs, deleteOperationLog } from '@/api/admin'
+import { getOperationLogs, deleteOperationLog, downloadConvertSourceFile, downloadConvertResultFile } from '@/api/admin'
 import { getQuestionList, exportExcel, clearAllQuestions } from '@/api/question'
 
 const message = useMessage()
@@ -161,6 +203,10 @@ const detailPagination = ref({ pageSize: 5 })
 
 const isImportLog = computed(() => {
   return selectedLog.value?.operationType === 'IMPORT'
+})
+
+const isConvertLog = computed(() => {
+  return selectedLog.value?.operationType === 'CONVERT'
 })
 
 const questionColumns = [
@@ -230,6 +276,7 @@ async function fetchDetailQuestions(logId) {
 function getIcon(type) {
   const t = type?.toLowerCase() || ''
   if (t.includes('import')) return CloudDownloadOutline
+  if (t.includes('convert')) return SwapHorizontalOutline
   if (t.includes('update') || t.includes('modify')) return ConstructOutline
   if (t.includes('delete')) return SkullOutline
   if (t.includes('add') || t.includes('create')) return FlashOutline
@@ -239,6 +286,7 @@ function getIcon(type) {
 function getLogTheme(log) {
   const t = log.operationType?.toLowerCase() || ''
   if (t.includes('import')) return 'theme-import'
+  if (t.includes('convert')) return 'theme-convert'
   if (t.includes('delete')) return 'theme-danger'
   if (t.includes('add') || t.includes('create')) return 'theme-active'
   return 'theme-neutral'
@@ -302,6 +350,30 @@ async function handleDeleteLog(id) {
   } catch (e) {
     message.error('Delete log failed')
   }
+}
+
+// 获取转换日志的统计信息
+function getConvertStats(log) {
+  if (!log || !log.operationData) return null
+  try {
+    return JSON.parse(log.operationData)
+  } catch (e) {
+    return null
+  }
+}
+
+// 下载转换日志的原始 TXT 文件
+function handleDownloadConvertSource(log) {
+  if (!log || !log.id) return
+  const url = downloadConvertSourceFile(log.id)
+  window.open(url, '_blank')
+}
+
+// 下载转换日志的结果 Excel 文件
+function handleDownloadConvertResult(log) {
+  if (!log || !log.id) return
+  const url = downloadConvertResultFile(log.id)
+  window.open(url, '_blank')
 }
 </script>
 
@@ -530,6 +602,29 @@ async function handleDeleteLog(id) {
     border: 2px dashed #ccc;
     padding: 15px;
     border-radius: 8px;
+}
+
+.convert-details {
+    margin-top: 20px;
+    border: 2px dashed #6366f1;
+    padding: 15px;
+    border-radius: 8px;
+    background: #f5f3ff;
+}
+
+.convert-stats {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.theme-convert .action-icon-circle { 
+    background: #EEF2FF; 
+    color: #4F46E5; 
+}
+.theme-convert { 
+    border-color: #6366F1; 
 }
 </style>
 

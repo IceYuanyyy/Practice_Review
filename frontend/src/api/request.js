@@ -51,6 +51,11 @@ request.interceptors.response.use(
         return Promise.reject(new Error(res.message || '登录过期'))
       }
 
+      // 如果请求配置了静默模式，不显示错误提示
+      if (response.config.silent) {
+        return Promise.reject(new Error(res.message || '请求失败'))
+      }
+
       // 显示错误提示
       window.$message?.error(res.message || '请求失败')
       return Promise.reject(new Error(res.message || '请求失败'))

@@ -140,4 +140,15 @@ public class WrongBookServiceImpl extends ServiceImpl<WrongBookMapper, WrongBook
     public List<Long> getWrongQuestionIds(Long userId) {
         return baseMapper.selectQuestionIdsByUserId(userId);
     }
+    
+    @Override
+    @Transactional
+    public boolean clearAllWrongQuestions(Long userId) {
+        log.info("清空用户{}的错题本", userId);
+        
+        LambdaQueryWrapper<WrongBook> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(WrongBook::getUserId, userId);
+        
+        return this.remove(wrapper);
+    }
 }

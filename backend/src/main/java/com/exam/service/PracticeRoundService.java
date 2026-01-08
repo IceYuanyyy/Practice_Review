@@ -18,9 +18,10 @@ public interface PracticeRoundService extends IService<PracticeRound> {
      * 
      * @param userId 用户ID
      * @param subject 科目
+     * @param ownerId (所有者ID，可选，用于管理员筛选)
      * @return 当前题目
      */
-    Question startOrContinueRound(Long userId, String subject);
+    Question startOrContinueRound(Long userId, String subject, Long ownerId);
 
     /**
      * 获取轮次中的下一题
@@ -66,7 +67,7 @@ public interface PracticeRoundService extends IService<PracticeRound> {
      * @param subject 科目
      * @return 新轮次的第一题
      */
-    Question resetRound(Long userId, String subject);
+    Question resetRound(Long userId, String subject, Long ownerId);
 
     /**
      * 获取指定轮次的答题状态结果

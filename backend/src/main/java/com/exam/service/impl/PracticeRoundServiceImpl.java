@@ -36,8 +36,8 @@ public class PracticeRoundServiceImpl extends ServiceImpl<PracticeRoundMapper, P
 
     @Override
     @Transactional
-    public Question startOrContinueRound(Long userId, String subject) {
-        log.info("开始/继续轮次: userId={}, subject={}", userId, subject);
+    public Question startOrContinueRound(Long userId, String subject, Long ownerId) {
+        log.info("开始/继续轮次: userId={}, subject={}, ownerId={}", userId, subject, ownerId);
         
         // 查找现有轮次
         PracticeRound round = baseMapper.selectByUserAndSubject(userId, subject);
@@ -45,7 +45,7 @@ public class PracticeRoundServiceImpl extends ServiceImpl<PracticeRoundMapper, P
         if (round == null || round.getIsFinished() || round.getQuestionIds() == null || round.getQuestionIds().isEmpty()) {
             // 创建新轮次（如果旧轮次的 questionIds 为 null，也需要重新创建）
             int nextRoundNumber = (round == null) ? 1 : round.getRoundNumber() + 1;
-            round = createNewRound(userId, subject, nextRoundNumber);
+            round = createNewRound(userId, subject, nextRoundNumber, ownerId);
         }
         
         if (round == null || round.getQuestionIds() == null || round.getQuestionIds().isEmpty()) {
@@ -61,13 +61,21 @@ public class PracticeRoundServiceImpl extends ServiceImpl<PracticeRoundMapper, P
     /**
      * 创建新的练习轮次
      */
-    private PracticeRound createNewRound(Long userId, String subject, int roundNumber) {
-        log.info("创建新轮次: userId={}, subject={}, roundNumber={}", userId, subject, roundNumber);
+    private PracticeRound createNewRound(Long userId, String subject, int roundNumber, Long ownerId) {
+        log.info("创建新轮次: userId={}, subject={}, roundNumber={}, ownerId={}", userId, subject, roundNumber, ownerId);
         
         // 获取该科目的所有题目ID
         LambdaQueryWrapper<Question> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Question::getSubject, subject)
                .select(Question::getId);
+        
+        if (ownerId != null) {
+            if (ownerId == -1L) {
+                wrapper.isNull(Question::getOwnerId);
+            } else {
+                wrapper.eq(Question::getOwnerId, ownerId);
+            }
+        }
         
         List<Question> questions = questionService.list(wrapper);
         if (questions.isEmpty()) {
@@ -191,8 +199,8 @@ public class PracticeRoundServiceImpl extends ServiceImpl<PracticeRoundMapper, P
 
     @Override
     @Transactional
-    public Question resetRound(Long userId, String subject) {
-        log.info("重置轮次: userId={}, subject={}", userId, subject);
+    public Question resetRound(Long userId, String subject, Long ownerId) {
+        log.info("重置轮次: userId={}, subject={}, ownerId={}", userId, subject, ownerId);
         
         PracticeRound existing = baseMapper.selectByUserAndSubject(userId, subject);
         // 重置通常意味着重新在这个轮次练习，所以不应该增加轮次号
@@ -208,7 +216,7 @@ public class PracticeRoundServiceImpl extends ServiceImpl<PracticeRoundMapper, P
             log.info("已清理当前轮次练习记录: removed={}, roundNumber={}, subject={}", removed, nextRoundNumber, subject);
         }
         
-        PracticeRound newRound = createNewRound(userId, subject, nextRoundNumber);
+        PracticeRound newRound = createNewRound(userId, subject, nextRoundNumber, ownerId);
         if (newRound != null && !newRound.getQuestionIds().isEmpty()) {
             Long questionId = newRound.getQuestionIds().get(0);
             return questionService.getById(questionId);

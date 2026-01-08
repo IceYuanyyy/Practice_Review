@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="practice-container" ref="practiceContainerRef">
     <n-scrollbar class="global-scrollbar" content-class="practice-layout-container" trigger="none">
     
@@ -46,6 +46,38 @@
               
               <n-form :label-width="80" size="large" class="sketch-form">
                 <n-grid :cols="1" :y-gap="32">
+                  <n-grid-item v-if="isAdmin">
+                    <div class="hand-label">👤 题库来源（管理员）</div>
+                    <div class="source-toggle-container">
+                      <div 
+                        class="source-toggle-btn" 
+                        :class="{ active: filters.ownerId === -1 }"
+                        @click="filters.ownerId = -1"
+                      >
+                        📚 公共题库
+                      </div>
+                      <div 
+                        class="source-toggle-btn" 
+                        :class="{ active: filters.ownerId === currentUser?.id }"
+                        @click="filters.ownerId = currentUser?.id"
+                      >
+                        🔒 我的题库
+                      </div>
+                    </div>
+                    <n-select 
+                      v-if="userOptions.length > 2"
+                      v-model:value="filters.ownerId" 
+                      :options="userOptions" 
+                      placeholder="或选择其他来源" 
+                      class="sketch-select"
+                      style="margin-top: 12px;"
+                      clearable
+                      />
+                  </n-grid-item>
+                  <n-grid-item v-else>
+                    <div class="hand-label">👤 题库来源</div>
+                    <div class="sketch-select readonly-text">🔒 仅自己的题库</div>
+                  </n-grid-item>
                   <n-grid-item>
                     <div class="hand-label">✏️ 选择科目</div>
                     <n-select 
@@ -347,8 +379,7 @@
                         :class="{ 
                           'active': num === (currentIndex + 1),
                           'correct': roundResults[num - 1] === 1,
-                          'wrong': roundResults[num - 1] === 2,
-                          'done': roundResults[num - 1] !== 0 && roundResults[num - 1] !== undefined
+                          'wrong': roundResults[num - 1] === 2
                         }"
                         @click="jumpToRoundIdx(num)"
                       >
@@ -503,6 +534,7 @@ import { CloseOutline, CheckmarkCircle, CloseCircle, CheckmarkOutline, SearchOut
 import { getRandomQuestion } from '@/api/question'
 import { submitAnswer as submitAnswerApi, startRound, nextRoundQuestion, prevRoundQuestion, resetRound, searchQuestions, startWrongBookPractice, nextWrongQuestion, jumpRoundQuestion, getRoundResults } from '@/api/practice'
 import { getAllSubjects } from '@/api/subject'
+import { getAllUsers, getUserProfile } from '@/api/user'
 import { usePracticeStore } from '@/stores/practice'
 
 const router = useRouter()
@@ -558,7 +590,7 @@ const handleResumeContinue = () => {
 const handleResumeReset = async () => {
   const subject = resumeModalData.value.subject
   try {
-    const resetRes = await resetRound(subject)
+    const resetRes = await resetRound(subject, filters.ownerId)
     if (resetRes.data && resetRes.data.question) {
       applyRoundState(resetRes.data)
       roundResults.value = {}
@@ -793,7 +825,14 @@ onMounted(async () => {
   window.addEventListener('focus', handleMouseEnter)
   document.addEventListener('fullscreenchange', handleFullscreenChange)
 
+  await loadProfile()
   await loadLastFilter()
+  // 非管理员强制 ownerId 为自己，管理员保持loadProfile设置的默认值
+  if (!isAdmin.value && currentUser.value?.id) {
+    filters.ownerId = currentUser.value.id
+  }
+  await loadUsers()
+  await loadSubjects()
   startZenTimer()
 })
 
@@ -808,15 +847,64 @@ onUnmounted(() => {
   window.removeEventListener('focus', handleMouseEnter)
   document.removeEventListener('fullscreenchange', handleFullscreenChange)
 })
-const filters = reactive({ subject: null, type: null, difficulty: null })
+const filters = reactive({ subject: null, type: null, difficulty: null, ownerId: null })
+const currentUser = ref(null)
+const isAdmin = ref(false)
 
 // 选项配置
 const subjectOptions = ref([])
+const userOptions = ref([])
+const loadingUsers = ref(false)
+
+// 加载用户列表
+const loadUsers = async () => {
+  if (!isAdmin.value) return
+  loadingUsers.value = true
+  try {
+    const res = await getAllUsers()
+    if (res.code === 200 && res.data) {
+      userOptions.value = [
+        { label: '全部来源', value: null },
+        { label: '公共题库', value: -1 },
+        { label: '仅看自己', value: currentUser.value?.id ?? null },
+        ...res.data
+          .filter(user => !currentUser.value || user.id !== currentUser.value.id)
+          .map(user => ({
+            label: `${user.username} (${user.nickname || '无昵称'})`,
+            value: user.id
+          }))
+      ]
+    }
+  } catch (error) {
+    // Only admin can load users
+  } finally {
+    loadingUsers.value = false
+  }
+}
+
+// 拉取当前用户信息，决定权限与默认筛选
+const loadProfile = async () => {
+  try {
+    const res = await getUserProfile()
+    if (res.code === 200 && res.data) {
+      currentUser.value = res.data
+      isAdmin.value = res.data.role === 'admin'
+      // 管理员默认看公共题库，非管理员默认只看自己的题库
+      if (isAdmin.value) {
+        filters.ownerId = -1 // 公共题库
+      } else {
+        filters.ownerId = res.data.id
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+}
 
 // 加载科目列表（保持纯查询，避免后端未启动时报错）
 const loadSubjects = async () => {
   try {
-    const res = await getAllSubjects()
+    const res = await getAllSubjects(filters.ownerId)
     if (res.data && res.data.length > 0) {
       const subjects = res.data.map(subject => ({
         label: `${subject.name} (${subject.questionCount})`,
@@ -827,11 +915,19 @@ const loadSubjects = async () => {
         { label: '全部科目', value: '' },
         ...subjects
       ]
+    } else {
+      subjectOptions.value = [{ label: '全部科目', value: '' }]
     }
   } catch (error) {
     console.error('加载科目列表失败', error)
   }
 }
+
+// Watch ownerId to reload subjects
+watch(() => filters.ownerId, () => {
+    filters.subject = null 
+    loadSubjects()
+})
 
 const typeOptions = [
   { label: '混合题型', value: '' },
@@ -893,9 +989,14 @@ const options = computed(() => {
         // 检测 "A: 内容" 或 "A. 内容" 格式
         const match = trimmed.match(/^([A-Z])[:.、]\s*(.*)$/)
         if (match) {
+          // 如果冒号后面内容为空，跳过该选项（说明是无效的空选项）
+          if (!match[2] || match[2].trim() === '') {
+            return null
+          }
           return { key: match[1], text: match[2] }
         }
-        // 纯内容，自动分配字母
+        // 纯内容，自动分配字母（跳过空字符串）
+        if (trimmed === '') return null
         return { key: letters[index] || `?${index}`, text: trimmed }
       }
       
@@ -1161,7 +1262,7 @@ const startPractice = async () => {
 
     // 使用轮次 API
     currentSubject.value = subject
-    const res = await startRound(subject)
+    const res = await startRound(subject, filters.ownerId)
     console.log('轮次响应:', res)
     
     if (!res.data || !res.data.question) {
@@ -1521,7 +1622,7 @@ const handleConfirmExit = () => {
 // 确认重置逻辑 (From Modal)
 const confirmResetAction = async () => {
     try {
-    const resetRes = await resetRound(currentSubject.value)
+    const resetRes = await resetRound(currentSubject.value, filters.ownerId)
     if (resetRes.data && resetRes.data.question) {
         applyRoundState(resetRes.data)
         roundResults.value = {} // 清空答题卡状态
@@ -1684,6 +1785,51 @@ const handleResetRound = () => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.readonly-text {
+  padding: 12px 14px;
+  border: 1px dashed #94a3b8;
+  border-radius: 12px;
+  color: #475569;
+  background: #f8fafc;
+  font-weight: 700;
+}
+
+/* 公共/私人题库切换按钮 */
+.source-toggle-container {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.source-toggle-btn {
+  flex: 1;
+  padding: 14px 16px;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.05);
+}
+
+.source-toggle-btn:hover {
+  border-color: #10b981;
+  color: #10b981;
+  transform: translateY(-2px);
+  box-shadow: 4px 4px 0 rgba(16, 185, 129, 0.15);
+}
+
+.source-toggle-btn.active {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #047857;
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,0.05), 3px 3px 0 rgba(16, 185, 129, 0.2);
 }
 
 :deep(.sketch-select .n-base-selection) {
@@ -2422,11 +2568,7 @@ const handleResetRound = () => {
   font-family: 'Fredoka One', cursive, sans-serif;
   background: #fff;
 }
-.bubble.done {
-  background: #e2e8f0;
-  border-color: #94a3b8;
-  color: #475569;
-}
+
 .bubble.active {
   border-color: #2c3e50;
   background: #2c3e50;
@@ -3119,7 +3261,7 @@ const handleResetRound = () => {
 .paper-holes-left .hole {
   width: 16px;
   height: 16px;
-  background: #e2e8f0; /* Darker hole fill */
+/*  background: #e2e8f0; */ /* Darker hole fill */
   border-radius: 50%;
   box-shadow: inset 2px 2px 4px rgba(0,0,0,0.2);
 }
@@ -3650,11 +3792,7 @@ const handleResetRound = () => {
   font-family: 'Fredoka One', cursive, sans-serif;
   background: #fff;
 }
-.bubble.done {
-  background: #e2e8f0;
-  border-color: #94a3b8;
-  color: #475569;
-}
+
 .bubble.active {
   border-color: #2c3e50;
   background: #2c3e50;
@@ -3932,7 +4070,7 @@ const handleResetRound = () => {
 }
 
 .sheet-pagination :deep(.n-button--disabled) {
-  background: #e2e8f0;
+/*  background: #e2e8f0; */
   border-color: #cbd5e1;
   color: #94a3b8;
   box-shadow: none;

@@ -28,10 +28,11 @@ public interface UserService extends IService<User> {
      * 
      * @param loginDTO 登录信息
      * @param ip 登录IP
+     * @param location 登录地点
      * @param userAgent User-Agent
      * @return Token
      */
-    String login(LoginDTO loginDTO, String ip, String userAgent);
+    String login(LoginDTO loginDTO, String ip, String location, String userAgent);
 
     /**
      * 用户登出

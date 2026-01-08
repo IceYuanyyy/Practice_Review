@@ -73,6 +73,7 @@ public class QuestionController {
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String difficulty,
             @RequestParam(required = false) Long importLogId,
+            @RequestParam(required = false) Long ownerId,
             @RequestParam(required = false) String keyword) {
         
         Long userId = getCurrentUserId();
@@ -83,8 +84,17 @@ public class QuestionController {
         
         // 权限控制
         if (!isAdmin) {
-            // 普通用户：只能看到自己的题目和公共题库
-            wrapper.and(w -> w.isNull("owner_id").or().eq("owner_id", userId));
+            // 普通用户：仅能看到自己的题目
+            wrapper.eq("owner_id", userId);
+        } else {
+             // 管理员: 如果指定了 ownerId，则筛选该用户或公共题库的题目
+             if (ownerId != null) {
+                 if (ownerId == -1L) {
+                     wrapper.isNull("owner_id");
+                 } else {
+                     wrapper.eq("owner_id", ownerId);
+                 }
+             }
         }
         // 管理员：可以看到所有题目（无需额外过滤条件）
         

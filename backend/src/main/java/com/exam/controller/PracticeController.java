@@ -320,6 +320,9 @@ public class PracticeController {
         // 清除用户题目统计表中的错题记录
         userQuestionStatsService.clearAllWrongRecords(userId);
         
+        // 清空错题本表（wrong_book）中的记录
+        wrongBookService.clearAllWrongQuestions(userId);
+        
         // 可选：同时删除练习记录中的错误记录
         QueryWrapper<PracticeRecord> wrapper = new QueryWrapper<>();
         wrapper.eq("user_id", userId).eq("is_correct", false);
@@ -405,10 +408,10 @@ public class PracticeController {
      * @return 当前题目
      */
     @PostMapping("/round/start")
-    public Result<Map<String, Object>> startRound(@RequestParam String subject) {
+    public Result<Map<String, Object>> startRound(@RequestParam String subject, @RequestParam(required = false) Long ownerId) {
         Long userId = getCurrentUserId();
         
-        Question question = practiceRoundService.startOrContinueRound(userId, subject);
+        Question question = practiceRoundService.startOrContinueRound(userId, subject, ownerId);
         if (question == null) {
             return Result.error("该科目暂无题目");
         }
@@ -514,10 +517,10 @@ public class PracticeController {
      * @return 新轮次的第一题
      */
     @PostMapping("/round/reset")
-    public Result<Map<String, Object>> resetRound(@RequestParam String subject) {
+    public Result<Map<String, Object>> resetRound(@RequestParam String subject, @RequestParam(required = false) Long ownerId) {
         Long userId = getCurrentUserId();
         
-        Question question = practiceRoundService.resetRound(userId, subject);
+        Question question = practiceRoundService.resetRound(userId, subject, ownerId);
         if (question == null) {
             return Result.error("该科目暂无题目");
         }

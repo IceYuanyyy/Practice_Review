@@ -60,4 +60,12 @@ public interface WrongBookService extends IService<WrongBook> {
      * @return 题目ID列表
      */
     List<Long> getWrongQuestionIds(Long userId);
+    
+    /**
+     * 清空用户错题本
+     * 
+     * @param userId 用户ID
+     * @return 是否成功
+     */
+    boolean clearAllWrongQuestions(Long userId);
 }
