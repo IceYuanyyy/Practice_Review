@@ -73,7 +73,8 @@ import {
   DocumentTextOutline,
   SettingsOutline,
   ArrowBackOutline,
-  Star
+  Star,
+  MegaphoneOutline
 } from '@vicons/ionicons5'
 
 const router = useRouter()
@@ -87,7 +88,8 @@ const currentTitle = computed(() => {
     '/admin/dashboard': 'DASHBOARD',
     '/admin/users': 'HEROES',
     '/admin/login-logs': 'LOGS',
-    '/admin/operation-logs': 'OPS'
+    '/admin/operation-logs': 'OPS',
+    '/admin/announcements': 'ANNOUNCEMENTS'
   }
   return map[route.path] || 'ZONE'
 })
@@ -98,6 +100,7 @@ const renderIcon = (icon) => () => h(NIcon, null, { default: () => h(icon) })
 const menuOptions = [
   { label: 'DASHBOARD', key: '/admin/dashboard', icon: renderIcon(GridOutline) },
   { label: 'MANAGE USERS', key: '/admin/users', icon: renderIcon(PeopleOutline) },
+  { label: 'ANNOUNCEMENTS', key: '/admin/announcements', icon: renderIcon(MegaphoneOutline) },
   { label: 'LOGIN LOGS', key: '/admin/login-logs', icon: renderIcon(TimeOutline) },
   { label: 'OP LOGS', key: '/admin/operation-logs', icon: renderIcon(DocumentTextOutline) }
 ]

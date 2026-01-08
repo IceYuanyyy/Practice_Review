@@ -88,4 +88,12 @@ public interface UserQuestionStatsService extends IService<UserQuestionStats> {
      * @return 是否收藏
      */
     boolean isMarked(Long userId, Long questionId);
+    
+    /**
+     * 按题目ID列表清除用户的错题记录
+     * 
+     * @param userId 用户ID
+     * @param questionIds 题目ID列表
+     */
+    void clearWrongRecordsByQuestionIds(Long userId, List<Long> questionIds);
 }

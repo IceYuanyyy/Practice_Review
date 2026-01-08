@@ -35,4 +35,11 @@ public class Subject {
      */
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
+    
+    /**
+     * 导入用户名（非数据库字段，仅用于前端显示）
+     */
+    @TableField(exist = false)
+    private String ownerName;
 }
+

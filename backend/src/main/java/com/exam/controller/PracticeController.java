@@ -310,13 +310,42 @@ public class PracticeController {
 
     /**
      * 清空错题本 - 仅清空当前用户的
+     * 支持按科目筛选清空
      * 
+     * @param subject 科目名称（可选，不传则清空全部）
      * @return 结果
      */
     @DeleteMapping("/wrong")
-    public Result<String> clearWrongQuestions() {
+    public Result<String> clearWrongQuestions(@RequestParam(required = false) String subject) {
         Long userId = getCurrentUserId();
         
+        if (StrUtil.isNotBlank(subject)) {
+            // 按科目清空
+            // 1. 获取该科目下的所有错题ID
+            List<Long> wrongQuestionIds = wrongBookService.getWrongQuestionIds(userId);
+            if (!wrongQuestionIds.isEmpty()) {
+                // 2. 查询该科目的题目
+                QueryWrapper<Question> qWrapper = new QueryWrapper<>();
+                qWrapper.in("id", wrongQuestionIds).eq("subject", subject);
+                List<Question> subjectQuestions = questionService.list(qWrapper);
+                
+                // 3. 获取要删除的题目ID列表
+                List<Long> toDeleteIds = subjectQuestions.stream()
+                        .map(Question::getId)
+                        .collect(Collectors.toList());
+                
+                if (!toDeleteIds.isEmpty()) {
+                    // 4. 从错题本删除
+                    wrongBookService.removeByQuestionIds(userId, toDeleteIds);
+                    
+                    // 5. 清理相关统计
+                    userQuestionStatsService.clearWrongRecordsByQuestionIds(userId, toDeleteIds);
+                }
+            }
+            return Result.success("已清空 " + subject + " 的错题");
+        }
+        
+        // 清空全部
         // 清除用户题目统计表中的错题记录
         userQuestionStatsService.clearAllWrongRecords(userId);
         

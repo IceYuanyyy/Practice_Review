@@ -33,6 +33,11 @@ public class UserVO {
     private String email;
 
     /**
+     * 邮箱是否已验证
+     */
+    private Boolean isEmailVerified;
+
+    /**
      * 头像URL
      */
     private String avatarUrl;
@@ -62,6 +67,7 @@ public class UserVO {
         vo.setUsername(user.getUsername());
         vo.setNickname(user.getNickname());
         vo.setEmail(user.getEmail());
+        vo.setIsEmailVerified(user.getIsEmailVerified());
         vo.setAvatarUrl(user.getAvatarUrl());
         vo.setRole(user.getRole());
         vo.setStatus(user.getStatus());

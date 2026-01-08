@@ -50,7 +50,7 @@
                 <label class="sketch-label">用户名 / 学号</label>
                 <n-input 
                   v-model:value="formData.username" 
-                  placeholder="Type your name..."
+                  placeholder="请输入你的账号"
                   :input-props="{ autocomplete: 'username' }"
                   class="sketch-input"
                 >
@@ -67,7 +67,7 @@
                 <n-input 
                   v-model:value="formData.password" 
                   type="password"
-                  placeholder="Secret code..."
+                  placeholder="请输入你的密码"
                   show-password-on="click"
                   :input-props="{ autocomplete: 'current-password' }"
                   @keyup.enter="handleLogin"
@@ -105,7 +105,48 @@
 
       <!-- 底部手写版权 -->
       <div class="sketch-footer">
-        <p>© 2025 Study Notes. Keep learning!</p>
+        <p>© 2026 Study Notes. Keep learning!</p>
+        <div class="contact-icons">
+          <!-- QQ -->
+          <n-tooltip trigger="hover">
+            <template #trigger>
+              <div class="icon-wrapper">
+                <n-icon :component="ChatbubbleEllipsesOutline" />
+              </div>
+            </template>
+            qq: 2478686497@qq.com
+          </n-tooltip>
+
+          <!-- GitHub -->
+          <n-tooltip trigger="hover">
+            <template #trigger>
+              <a href="https://github.com/IceYuanyyy" target="_blank" class="icon-wrapper github-link">
+                <n-icon :component="LogoGithub" />
+              </a>
+            </template>
+            GitHub: IceYuanyyy (点击访问)
+          </n-tooltip>
+
+          <!-- Gmail -->
+          <n-tooltip trigger="hover">
+            <template #trigger>
+              <div class="icon-wrapper">
+                <n-icon :component="LogoGoogle" />
+              </div>
+            </template>
+            ercurym86@gmail.com
+          </n-tooltip>
+
+          <!-- Student Mail -->
+          <n-tooltip trigger="hover">
+            <template #trigger>
+              <div class="icon-wrapper">
+                <n-icon :component="SchoolOutline" />
+              </div>
+            </template>
+            2023213873@sdtbu.edu.cn
+          </n-tooltip>
+        </div>
       </div>
     </div>
   </div>
@@ -115,8 +156,17 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
-import { NForm, NFormItem, NInput, NCheckbox, NIcon } from 'naive-ui'
-import { SchoolOutline, PersonOutline, LockClosedOutline, ArrowForwardOutline as ArrowForward } from '@vicons/ionicons5'
+import { NForm, NFormItem, NInput, NCheckbox, NIcon, NTooltip } from 'naive-ui'
+import { 
+  SchoolOutline, 
+  PersonOutline, 
+  LockClosedOutline, 
+  ArrowForwardOutline as ArrowForward,
+  LogoGithub,
+  LogoGoogle,
+  MailOutline,
+  ChatbubbleEllipsesOutline
+} from '@vicons/ionicons5'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
@@ -281,7 +331,7 @@ function goToRegister() {
 
 /* 手绘风格卡片 */
 .sketch-card {
-  width: 380px;
+  width: 460px;
   background: #ffffff;
   border: 3px solid #2c3e50;
   border-radius: 2px 2px 2px 2px; /* Slight imperfection handled by transforms usually, but border-radius helps */
@@ -521,6 +571,40 @@ function goToRegister() {
   color: #6b7280;
   font-size: 14px;
   transform: rotate(1deg);
+  text-align: center;
+}
+
+.contact-icons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.icon-wrapper {
+  font-size: 20px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px dashed #9ca3af;
+}
+
+.icon-wrapper:hover {
+  color: #2c3e50;
+  border-color: #2c3e50;
+  transform: scale(1.1) rotate(-5deg);
+  background: white;
+}
+
+.github-link {
+  color: inherit;
+  text-decoration: none;
 }
 
 /* 响应式 */

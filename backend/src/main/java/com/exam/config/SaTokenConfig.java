@@ -26,6 +26,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                         // 认证相关
                         "/api/auth/login",
                         "/api/auth/register",
+                        "/api/auth/send-code",  // 发送验证码（注册用）
                         // 静态资源
                         "/static/**",
                         "/favicon.ico",

@@ -48,6 +48,8 @@ public class IpUtil {
             // 多个IP时取第一个（即真实客户端IP）
             if (ip.contains(",")) {
                 ip = ip.split(",")[0].trim();
+            } else {
+                ip = ip.trim();
             }
             return ip;
         }

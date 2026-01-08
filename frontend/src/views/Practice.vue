@@ -906,10 +906,17 @@ const loadSubjects = async () => {
   try {
     const res = await getAllSubjects(filters.ownerId)
     if (res.data && res.data.length > 0) {
-      const subjects = res.data.map(subject => ({
-        label: `${subject.name} (${subject.questionCount})`,
-        value: subject.name
-      }))
+      const subjects = res.data.map(subject => {
+        // 构建显示标签：科目名 (题数) - 用户名
+        let label = `${subject.name} (${subject.questionCount})`
+        if (subject.ownerName) {
+          label += ` - ${subject.ownerName}`
+        }
+        return {
+          label: label,
+          value: subject.name
+        }
+      })
       // 将"全部科目"作为独立选项，value设为空字符串而非null
       subjectOptions.value = [
         { label: '全部科目', value: '' },

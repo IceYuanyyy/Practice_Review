@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手绘风格公告板</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- 核心变量定义 --- */
+        :root {
+            --bg-color: #f0f0f0;
+            --board-bg: #fffbf0;
+            --ink-color: #2c3e50;
+            --accent-color: #ff6b6b;
+            --tape-color: rgba(255, 255, 255, 0.4);
+            --shadow-style: 2px 3px 0px rgba(0,0,0,0.1);
+            --hand-font: 'Patrick Hand', 'ZCOOL KuaiLe', cursive;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            /* 模拟网格纸背景 */
+            background-image:
+                    linear-gradient(#e0e0e0 1px, transparent 1px),
+                    linear-gradient(90deg, #e0e0e0 1px, transparent 1px);
+            background-size: 20px 20px;
+            font-family: var(--hand-font);
+            color: var(--ink-color);
+            display: flex;
+            justify_content: center;
+            padding: 40px 20px;
+            margin: 0;
+        }
+
+        /* --- 公告板容器 --- */
+        .bulletin-board {
+            max-width: 800px;
+            width: 100%;
+            background-color: var(--board-bg);
+            padding: 40px;
+            position: relative;
+
+            /* Reference: 9elements, "CSS Border-Radius Can Do That?" [3] */
+            /* 使用8个值的 border-radius 创建扭曲/手绘效果 */
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+            border: 3px solid var(--ink-color);
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.15);
+        }
+
+        /* --- 标题样式 --- */
+        h1 {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 40px;
+            position: relative;
+            display: inline-block;
+            left: 50%;
+            transform: translateX(-50%) rotate(-2deg);
+        }
+
+        /* 标题下的波浪线装饰 */
+        h1::after {
+            content: "";
+            display: block;
+            width: 100%;
+            height: 10px;
+            background: url("data:image/svg+xml;charset=UTF-8,%3csvg width='20' height='10' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M0 5 Q 5 10 10 5 T 20 5' stroke='%23ff6b6b' fill='none' stroke-width='3' stroke-linecap='round'/%3e%3c/svg%3e") repeat-x;
+            margin-top: 5px;
+        }
+
+        /* --- 公告列表 --- */
+        .notice-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+        }
+
+        /* --- 单个便签卡片 --- */
+        .sticky-note {
+            background: #fff;
+            width: 280px;
+            padding: 20px 20px 30px 20px;
+            position: relative;
+            border: 2px solid var(--ink-color);
+            box-shadow: var(--shadow-style);
+            transition: transform 0.2s ease;
+
+            /* 便签的横线背景 */
+            background-image: linear-gradient(#e1e8ed 1px, transparent 1px);
+            background-size: 100% 25px;
+            line-height: 25px;
+        }
+
+        /* 鼠标悬停动效 */
+        .sticky-note:hover {
+            transform: scale(1.02) rotate(0deg) !important;
+            z-index: 10;
+            box-shadow: 5px 8px 0px rgba(0,0,0,0.2);
+        }
+
+        /* --- 胶带效果 (伪元素) --- */
+        .sticky-note::before {
+            content: "";
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            width: 100px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.6);
+            border-left: 1px dashed rgba(0,0,0,0.1);
+            border-right: 1px dashed rgba(0,0,0,0.1);
+            box-shadow: 0px 1px 1px rgba(0,0,0,0.1);
+            transform: translateX(-50%) rotate(-2deg);
+            opacity: 0.7;
+        }
+
+        /* --- 颜色变体 --- */
+        .note-yellow {
+            background-color: #fff7d1;
+            transform: rotate(-1.5deg);
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+        }
+        .note-blue {
+            background-color: #d1f7ff;
+            transform: rotate(2deg);
+            border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;
+        }
+        .note-pink {
+            background-color: #ffd1d1;
+            transform: rotate(-1deg);
+            border-radius: 255px 15px 225px 15px / 225px 15px 255px 15px;
+        }
+
+        /* --- 内容排版 --- */
+        .note-date {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 10px;
+            text-align: right;
+        }
+
+        .note-title {
+            font-size: 1.4rem;
+            margin: 0 0 10px 0;
+            font-weight: bold;
+            border-bottom: 2px solid var(--ink-color);
+            display: inline-block;
+        }
+
+        .note-content {
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .important-mark {
+            color: #d63031;
+            font-weight: bold;
+            border: 2px solid #d63031;
+            padding: 2px 8px;
+            border-radius: 20px 5px 20px 5px;
+            display: inline-block;
+            transform: rotate(-5deg);
+            margin-bottom: 5px;
+        }
+
+        /* --- 响应式 --- */
+        @media (max-width: 600px) {
+            h1 { font-size: 2rem; }
+            .sticky-note { width: 100%; transform: rotate(0deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="bulletin-board">
+    <h1>🔔 近期公告栏</h1>
+
+    <div class="notice-container">
+
+        <div class="sticky-note note-yellow">
+            <span class="note-date">2026-01-08</span>
+            <div class="important-mark">重要!</div>
+            <h3 class="note-title">系统维护通知</h3>
+            <p class="note-content">
+                本周五晚上 10 点将进行服务器例行维护。请大家提前保存好数据，不要在此期间提交代码哦！
+                <br> - 运维部
+            </p>
+        </div>
+
+        <div class="sticky-note note-blue">
+            <span class="note-date">2026-01-07</span>
+            <h3 class="note-title">下午茶收集</h3>
+            <p class="note-content">
+                下周的团建下午茶大家想喝什么？请在群里的投票链接填写一下。<br>
+                P.S. 奶茶记得选甜度~
+            </p>
+        </div>
+
+        <div class="sticky-note note-pink">
+            <span class="note-date">2026-01-05</span>
+            <h3 class="note-title">失物招领</h3>
+            <p class="note-content">
+                在会议室捡到一个黑色的罗技鼠标接收器，应该是谁落下的？请到前台领取。
+            </p>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>

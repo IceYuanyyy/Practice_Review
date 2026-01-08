@@ -114,4 +114,18 @@ public class UserQuestionStatsServiceImpl extends ServiceImpl<UserQuestionStatsM
         UserQuestionStats stats = baseMapper.selectByUserAndQuestion(userId, questionId);
         return stats != null && Boolean.TRUE.equals(stats.getIsMarked());
     }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void clearWrongRecordsByQuestionIds(Long userId, List<Long> questionIds) {
+        if (questionIds == null || questionIds.isEmpty()) {
+            return;
+        }
+        UpdateWrapper<UserQuestionStats> wrapper = new UpdateWrapper<>();
+        wrapper.eq("user_id", userId)
+               .in("question_id", questionIds)
+               .set("wrong_count", 0);
+        baseMapper.update(null, wrapper);
+        log.info("按科目清除用户错题记录: userId={}, 题目数量={}", userId, questionIds.size());
+    }
 }

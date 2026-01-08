@@ -73,7 +73,7 @@
               <div class="field-group">
                 <n-input 
                   v-model:value="formData.email" 
-                  placeholder="邮箱 (用于找回密码)"
+                  placeholder="邮箱 (必填，用于接收验证码)"
                   :input-props="{ autocomplete: 'email' }"
                   class="line-input"
                 >
@@ -81,6 +81,30 @@
                     <n-icon :component="MailOutline" class="field-icon"/>
                   </template>
                 </n-input>
+              </div>
+            </n-form-item>
+
+            <!-- 验证码输入区域 -->
+            <n-form-item path="verificationCode">
+              <div class="code-input-group">
+                <n-input 
+                  v-model:value="formData.verificationCode" 
+                  placeholder="邮箱验证码 (6位)"
+                  maxlength="6"
+                  class="line-input code-input"
+                >
+                  <template #prefix>
+                    <n-icon :component="KeyOutline" class="field-icon"/>
+                  </template>
+                </n-input>
+                <button 
+                  type="button"
+                  class="send-code-btn"
+                  :disabled="sendingCode || countdown > 0 || !formData.email"
+                  @click="handleSendCode"
+                >
+                  {{ countdown > 0 ? `${countdown}s` : '发送验证码' }}
+                </button>
               </div>
             </n-form-item>
 
@@ -150,8 +174,8 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import { NForm, NFormItem, NInput, NIcon } from 'naive-ui'
-import { PersonOutline, LockClosedOutline, MailOutline, HappyOutline, CheckmarkCircleOutline } from '@vicons/ionicons5'
-import { register } from '@/api/auth'
+import { PersonOutline, LockClosedOutline, MailOutline, HappyOutline, CheckmarkCircleOutline, KeyOutline } from '@vicons/ionicons5'
+import { register, sendVerificationCode } from '@/api/auth'
 
 const router = useRouter()
 const message = useMessage()
@@ -164,8 +188,13 @@ const formData = reactive({
   nickname: '',
   email: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  verificationCode: ''
 })
+
+// 验证码发送相关
+const sendingCode = ref(false)
+const countdown = ref(0)
 
 // 密码一致性验证
 function validatePasswordSame(rule, value) {
@@ -182,7 +211,12 @@ const rules = {
     { max: 50, message: '太长啦', trigger: 'blur' }
   ],
   email: [
+    { required: true, message: '邮箱必填，用于接收验证码', trigger: 'blur' },
     { type: 'email', message: '这个邮箱格式不对', trigger: 'blur' }
+  ],
+  verificationCode: [
+    { required: true, message: '请输入验证码', trigger: 'blur' },
+    { len: 6, message: '验证码为6位数字', trigger: 'blur' }
   ],
   password: [
     { required: true, message: '密码不能为空', trigger: 'blur' },
@@ -192,6 +226,45 @@ const rules = {
     { required: true, message: '请确认密码', trigger: 'blur' },
     { validator: validatePasswordSame, message: '两次密码不一致', trigger: 'blur' }
   ]
+}
+
+// 发送验证码
+async function handleSendCode() {
+  if (!formData.email) {
+    message.warning('请先输入邮箱地址')
+    return
+  }
+  
+  // 验证邮箱格式
+  const emailRegex = /^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}$/
+  if (!emailRegex.test(formData.email)) {
+    message.warning('请输入有效的邮箱地址')
+    return
+  }
+  
+  sendingCode.value = true
+  
+  try {
+    const res = await sendVerificationCode(formData.email)
+    if (res.code === 200) {
+      message.success('✅ 验证码已发送，请查收邮件')
+      // 开始倒计时（60秒）
+      countdown.value = 60
+      const timer = setInterval(() => {
+        countdown.value--
+        if (countdown.value <= 0) {
+          clearInterval(timer)
+        }
+      }, 1000)
+    } else {
+      message.error(res.message || '验证码发送失败')
+    }
+  } catch (error) {
+    console.error('验证码发送失败:', error)
+    message.error('❌ 验证码发送失败，请重试')
+  } finally {
+    sendingCode.value = false
+  }
 }
 
 // 注册处理
@@ -205,7 +278,8 @@ async function handleRegister() {
       password: formData.password,
       confirmPassword: formData.confirmPassword,
       nickname: formData.nickname || undefined,
-      email: formData.email || undefined
+      email: formData.email,
+      verificationCode: formData.verificationCode
     })
 
     message.success('注册成功！快去登录吧')
@@ -276,7 +350,7 @@ function goToLogin() {
 }
 
 .notebook-card {
-  width: 500px;
+  width: 600px;
   background: #fff;
   border-radius: 4px; /* Basic round for browser */
   border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; /* Sketchy */
@@ -440,6 +514,44 @@ function goToLogin() {
 
 .register-btn:active::after {
   transform: translate(-3px, -3px);
+}
+
+/* 验证码输入区域 */
+.code-input-group {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.code-input {
+  flex: 1;
+}
+
+.send-code-btn {
+  padding: 10px 16px;
+  background: #10b981;
+  color: #fff;
+  border: 2px solid #1e293b;
+  border-radius: 8px;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 16px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  min-width: 100px;
+  height: 42px;
+}
+
+.send-code-btn:hover:not(:disabled) {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.send-code-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.7;
+  border-color: #94a3b8;
 }
 
 .footer-link {

@@ -30,16 +30,29 @@
 ## 📅 更新日志
 
 <details open>
-<summary>v1.1.x (2026-01-08) · 合并更新</summary>
+<summary>v1.1.2 (2026-01-08) · 🎨 视觉进化 & ⚡ 系统增强</summary>
 
-- **📑 题库转换日志**：TXT→Excel 转换全量入库，后台可在线查看 CONVERT 类型并下载原始/生成文件；QuestionConverter 自动上报 Base64 内容并记录科目与题量；新增 `sql/add_convert_file_fields.sql` 为 `user_operation_log` 增加文件字段
-- **🌍 IP 归属地追踪**：新增 `IpUtil` 获取真实 IP，登录/操作日志显示省市级归属地；接入多 API 自动容错，结果缓存；支持 X-Forwarded-For、X-Real-IP 等代理头
-- **🛠️ 稳定性修复**：答题卡样式优先级修正，错题复习状态高亮准确；清空错题时同步 `wrong_book` 并刷新前端；题目编辑新增 E/F 选项与答案选择，六选项题型持久化
+- **🎨 UI 风格焕新 (Frontend)**:
+  - **手绘风公告栏**: 重构通知面板为 `Bulletin Board` 风格，采用格纹软木板背景 + `Patrick Hand` 手写字体
+  - **便利贴交互**: 消息卡片升级为随机色系 (黄/蓝/粉) 的便利贴 (Sticky Notes)，支持 "透明胶带" 粘贴效果
+  - **视觉细节**: 新增 "📌 置顶" 红色印章、"NEW!" 动态角标及手绘风 Tab 切换页签
+- **📧 邮箱验证升级 (Auth)**:
+  - **模板重制**: 邮件模板升级为 Comic/Industrial 漫画工业风，集成 CSS 胶带效果与 bouncing 动画
+  - **体验优化**: 验证码改为大号等宽字体 + 虚线框设计，支持双击复制；修复 HTML 模板中 CSS 百分号转义问题
+  - **强制流程**: 完善 `is_email_verified` 状态检查，未验证用户强制引导绑定
+- **🌍 核心业务增强 (System)**:
+  - **IP 归属地追踪**: 新增 `IpUtil` 多源 API，登录/操作日志自动记录省市级归属地，支持缓存与容错
+  - **题库转换存档**: TXT→Excel 转换全量入库，支持后台下载原始/生成文件 (`sql/add_convert_file_fields.sql`)
+- **🛠️ 稳定性与架构**:
+  - **SQL 架构合并**: 合并 `announcement` 表结构至主 SQL 文件，精简维护成本
+  - **数据一致性**: 题目编辑支持 6 选项 (E/F) 持久化；错题清空同步刷新 `wrong_book`
+  - **问题修复**: 修正练习重置逻辑与答题卡样式，优化置顶公告排序算法
+  - **样式修复**: 公告详情弹窗升级为 Admin Comic 风格（Bangers 字体 + 纯白背景），修复内容截断与 CSS 编译错误
 
 </details>
 
 <details>
-<summary>v1.2.0 (2026-01-07) · 🌟 沉浸式体验升级</summary>
+<summary>v1.1.1 (2026-01-07) · 🌟 沉浸式体验升级</summary>
 
 - **🚀 启动特效 & 沉浸体验**:
   - 新增全屏"火箭发射"启动动画，点击 "INJECT ENERGY" 为学习充能

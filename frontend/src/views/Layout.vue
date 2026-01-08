@@ -140,48 +140,76 @@
               <template #icon><n-icon :component="SearchOutline" /></template>
             </n-button>
             
-            <n-popover trigger="click" placement="bottom-end" :show-arrow="false" style="padding: 0; width: 320px;">
-              <template #trigger>
-                <n-button circle secondary type="warning" class="action-btn">
-                  <template #icon>
-                    <n-badge :value="unreadCount" :max="99" :dot="unreadCount > 0" processing>
-                      <n-icon :component="NotificationsOutline" />
-                    </n-badge>
-                  </template>
-                </n-button>
-              </template>
-              
-              <!-- Notification Panel -->
-              <div class="notification-panel">
-                <div class="panel-header">
-                  <span class="panel-title">系统通知 ({{ unreadCount }})</span>
-                  <n-button text size="small" type="primary" @click="markAllRead" :disabled="unreadCount === 0">
-                    全部已读
+            <n-popover trigger="click" placement="bottom-end" :show-arrow="false" style="padding: 0; width: 360px;" class="hand-drawn-popover">
+                <template #trigger>
+                  <n-button circle secondary type="warning" class="action-btn">
+                    <template #icon>
+                      <n-badge :value="unreadCount" :max="99" :show="unreadCount > 0" color="#E23636">
+                        <n-icon :component="NotificationsOutline" />
+                      </n-badge>
+                    </template>
                   </n-button>
-                </div>
-                <div class="panel-body">
-                  <n-empty v-if="notifications.length === 0" description="暂无通知" style="padding: 24px 0" />
-                  <div 
-                    v-else 
-                    v-for="item in notifications" 
-                    :key="item.id" 
-                    class="notification-item"
-                    :class="{ 'unread': !item.read }"
-                    @click="readNotification(item)"
-                  >
-                    <div class="notif-icon" :class="item.type">
-                      <n-icon :component="item.icon" />
+                </template>
+              
+              <!-- Notification Board (Hand Drawn Style) -->
+              <div class="bulletin-board-panel">
+                <div class="board-header">
+                  <h3 class="board-title">🔔 公告栏</h3>
+                  <!-- Taped Tabs -->
+                  <div class="board-tabs">
+                    <div 
+                      class="tape-tab" 
+                      :class="{ active: notificationTab === 'unread' }"
+                      @click="notificationTab = 'unread'"
+                    >
+                      未读 ({{ unreadCount }})
                     </div>
-                    <div class="notif-content">
-                      <div class="notif-title">{{ item.title }}</div>
-                      <div class="notif-desc">{{ item.content }}</div>
-                      <div class="notif-time">{{ item.time }}</div>
+                    <div 
+                      class="tape-tab" 
+                      :class="{ active: notificationTab === 'all' }"
+                      @click="notificationTab = 'all'"
+                    >
+                      全部
                     </div>
-                    <div v-if="!item.read" class="notif-dot"></div>
                   </div>
                 </div>
-                <div class="panel-footer">
-                  <n-button text block size="small">查看全部历史消息</n-button>
+                
+                <div class="board-content">
+                  <div v-if="filteredNotifications.length === 0" class="empty-board">
+                     <span>📭 暂无消息...</span>
+                  </div>
+                  
+                  <transition-group name="note-pop" tag="div" class="notes-container">
+                    <div 
+                      v-for="item in filteredNotifications" 
+                      :key="item.id" 
+                      class="sticky-note"
+                      :class="[item.noteColor, { 'read-note': item.read }]"
+                      @click="readNotification(item)"
+                    >
+                      <div class="tape-strip"></div>
+                      
+                      <div class="note-date">{{ item.time }}</div>
+                      <div class="badges-container">
+                        <div v-if="item.isPinned" class="pinned-mark">📌 置顶</div>
+                        <div v-if="!item.read" class="important-mark">NEW!</div>
+                      </div>
+                      
+                      <div class="note-body">
+                         <div class="note-title">{{ item.title }}</div>
+                         <div class="note-text">{{ item.content }}</div>
+                      </div>
+                      
+                      <div class="note-footer" v-if="!item.read">
+                        <span class="click-hint">点击已读</span>
+                      </div>
+                    </div>
+                  </transition-group>
+                </div>
+                
+                <div class="board-footer">
+                   <n-button text class="hand-btn" @click="markAllRead" v-if="unreadCount > 0">全部已读</n-button>
+                   <n-button text class="hand-btn" @click="notificationTab = 'all'">查看更多</n-button>
                 </div>
               </div>
             </n-popover>
@@ -259,6 +287,37 @@
         <div class="search-hint">按 Enter 开始搜索</div>
       </div>
     </n-modal>
+
+    <!-- Announcement Detail Modal (Admin Style) -->
+    <n-modal
+      v-model:show="showDetailModal"
+      transform-origin="center"
+      class="comic-modal-layout"
+    >
+      <div class="comic-modal" style="width: 650px; max-width: 95vw;">
+        <div class="modal-header">
+           <h2>ANNOUNCEMENT #{{ currentDetail?.id }}</h2>
+        </div>
+        
+        <div class="modal-body" v-if="currentDetail">
+           <h2 class="detail-title">{{ currentDetail.title }}</h2>
+           
+           <div class="detail-meta">
+              <span v-if="currentDetail.isPinned">
+                 <n-tag type="warning" size="small">置顶</n-tag>
+              </span>
+              <span class="meta-item">发布者: {{ currentDetail.publisher }}</span>
+              <span class="meta-item">时间: {{ currentDetail.time }}</span>
+           </div>
+           
+           <div class="detail-content" v-html="currentDetail.fullContent"></div>
+           
+           <div class="detail-footer">
+              <span class="signature">—— Exam Master System</span>
+           </div>
+        </div>
+      </div>
+    </n-modal>
     <!-- Rocket Launch Overlay -->
     <transition name="fade">
       <div v-if="showLaunchAnimation" class="launch-overlay">
@@ -280,7 +339,8 @@
 </template>
 
 <script setup>
-import { ref, h, computed, nextTick } from 'vue'
+import { ref, h, computed, nextTick, onMounted } from 'vue'
+import { getAnnouncements } from '@/api/announcement'
 import { useRouter, useRoute } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import { 
@@ -413,51 +473,115 @@ const handleGlobalSearch = () => {
   searchKeyword.value = ''
 }
 
-// === 通知功能 (Mock Data) ===
-const notifications = ref([
-  { 
-    id: 1, 
-    type: 'info',
-    title: '系统通知', 
-    content: '期末复习系统 Pro 版已上线！', 
-    time: '刚刚', 
-    read: false,
-    icon: InformationCircleOutline
-  },
-  { 
-    id: 2, 
-    type: 'warning',
-    title: '错题提醒', 
-    content: '您昨天有 5 道新错题待复习，点击前往错题本。', 
-    time: '2小时前', 
-    read: false,
-    icon: AlertCircleOutline
-  },
-  { 
-    id: 3, 
-    type: 'success',
-    title: '达成成就', 
-    content: '恭喜！您已连续打卡 3 天。', 
-    time: '1天前', 
-    read: true,
-    icon: TrophyOutline
+// === 公告详情模态框 ===
+const showDetailModal = ref(false)
+const currentDetail = ref(null)
+
+// === 通知功能 (Real Data) ===
+const notifications = ref([])
+const notificationTab = ref('unread') // 'unread' | 'all'
+const READ_KEY = 'exam_sys_read_announcements'
+
+const getReadIds = () => {
+  try {
+    return JSON.parse(localStorage.getItem(READ_KEY) || '[]')
+  } catch {
+    return []
   }
-])
+}
+
+const fetchNotifications = async () => {
+  try {
+    // 获取最新发布的公告 (获取更多以确保未读可以显示)
+    const res = await getAnnouncements({ 
+      page: 1, 
+      size: 20, // 增加获取数量
+      status: 1 
+    })
+    
+    if (res.data && res.data.records) {
+      const readIds = getReadIds()
+      
+      notifications.value = res.data.records.map(item => ({
+        id: item.id,
+        type: item.isPinned ? 'warning' : 'info',
+        title: item.title,
+        content: item.content.replace(/<[^>]+>/g, '').substring(0, 50) + (item.content.length > 50 ? '...' : ''),
+        fullContent: item.content, // Keep full HTML content
+        time: item.createTime.replace('T', ' ').substring(5, 16),
+        pubTime: item.createTime,
+        read: readIds.includes(item.id),
+        icon: item.isPinned ? AlertCircleOutline : InformationCircleOutline,
+        isAnnouncement: true,
+        isPinned: item.isPinned === 1 || item.isPinned === true,
+        publisher: item.publisherName || 'System',
+        noteColor: ['note-yellow', 'note-blue', 'note-pink'][Math.floor(Math.random() * 3)] // Random color
+      }))
+
+      // Sort: Pinned first, then Newest first
+      notifications.value.sort((a, b) => {
+        if (a.isPinned !== b.isPinned) {
+          return a.isPinned ? -1 : 1
+        }
+        return new Date(b.pubTime) - new Date(a.pubTime)
+      })
+    }
+  } catch (e) {
+    console.error('获取通知失败', e)
+  }
+}
+
+// 在组件挂载时获取通知
+onMounted(() => {
+  fetchNotifications()
+})
 
 const unreadCount = computed(() => notifications.value.filter(n => !n.read).length)
 
+// 过滤显示的通知
+const filteredNotifications = computed(() => {
+  if (notificationTab.value === 'unread') {
+    return notifications.value.filter(n => !n.read)
+  }
+  return notifications.value
+})
+
 const markAllRead = () => {
-  notifications.value.forEach(n => n.read = true)
+  const readIds = getReadIds()
+  const newIds = []
+  
+  notifications.value.forEach(n => {
+    if (!n.read) {
+      n.read = true
+      newIds.push(n.id)
+    }
+  })
+  
+  // 保存到 localStorage
+  const finalIds = [...new Set([...readIds, ...newIds])]
+  localStorage.setItem(READ_KEY, JSON.stringify(finalIds))
+  
   message.success('已全部标记为已读')
 }
 
 const readNotification = (item) => {
   if (!item.read) {
     item.read = true
+    const readIds = getReadIds()
+    if (!readIds.includes(item.id)) {
+      readIds.push(item.id)
+      localStorage.setItem(READ_KEY, JSON.stringify(readIds))
+    }
   }
+  
   // 简单的跳转逻辑
   if (item.title === '错题提醒') {
     router.push('/wrong-book')
+    router.push('/wrong-book')
+  } else if (item.isAnnouncement) {
+    // Open Detail Modal
+    currentDetail.value = item
+    showDetailModal.value = true
   }
 }
 // === Cyber Status Widget Logic ===
@@ -914,146 +1038,247 @@ const triggerBoost = () => {
   filter: grayscale(100%);
 }
 
-/* === Notification Panel Styles (Enhanced Tech Style) === */
-.notification-panel {
-  background: white;
-  border: 4px solid var(--void-black);
-  box-shadow: 8px 8px 0 rgba(0,0,0,0.2);
-  width: 340px; /* Slightly wider */
-}
+/* === Bulletin Board Notificaton Styles === */
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Patrick+Hand&family=ZCOOL+KuaiLe&display=swap');
 
-.panel-header {
-  padding: 12px 16px;
-  border-bottom: 4px solid var(--void-black);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--neon-yellow); /* Yellow Header */
-}
-
-.panel-title {
-  font-weight: 900;
-  font-size: 16px;
-  color: var(--void-black);
-  text-transform: uppercase;
-  font-family: 'Courier New', Courier, monospace;
-  letter-spacing: -0.5px;
-}
-
-.panel-body {
-  max-height: 400px;
-  overflow-y: auto;
-  background: 
-    linear-gradient(90deg, transparent 95%, rgba(0,0,0,0.03) 95%),
-    linear-gradient(transparent 95%, rgba(0,0,0,0.03) 95%);
+.bulletin-board-panel {
+  --board-bg: #fffbf0;
+  --ink-color: #2c3e50;
+  --accent-color: #ff6b6b;
+  --hand-font: 'Patrick Hand', 'ZCOOL KuaiLe', cursive;
+  
+  width: 360px;
+  background-color: var(--board-bg);
+  /* Simulation of grid paper */
+  background-image: 
+      linear-gradient(#e0e0e0 1px, transparent 1px),
+      linear-gradient(90deg, #e0e0e0 1px, transparent 1px);
   background-size: 20px 20px;
-}
-
-.notification-item {
-  padding: 16px;
-  border-bottom: 2px solid var(--void-black);
-  display: flex;
-  gap: 16px; /* More gap */
-  cursor: pointer;
-  position: relative;
-  transition: all 0.1s;
-  background: white;
-  margin-bottom: -2px; /* Overlap borders */
-}
-
-.notification-item:hover {
-  background: var(--off-white);
-  transform: translateX(-4px);
-  box-shadow: 4px 4px 0 var(--neon-cyan);
-  z-index: 10;
-  border-color: var(--void-black);
-}
-
-.notification-item.unread {
-  background: #fff;
-}
-/* Unread indicator via left border */
-.notification-item.unread::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 6px;
-  background: var(--neon-magenta);
-}
-
-.notif-icon {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid var(--void-black);
-  font-size: 20px;
-  flex-shrink: 0;
-  background: white;
-  box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
-}
-
-.notif-icon.info { color: var(--neon-cyan); }
-.notif-icon.warning { color: var(--neon-yellow); }
-.notif-icon.success { color: var(--neon-magenta); }
-
-/* Invert colors on specific types for variety */
-.notif-icon.success { background: var(--neon-magenta); color: white; }
-
-.notif-content {
-  flex: 1;
+  border: 4px solid var(--ink-color);
+  /* Wobbly border radius */
+  border-radius: 2px 2px 5px 15px; 
+  font-family: var(--hand-font);
+  color: var(--ink-color);
   display: flex;
   flex-direction: column;
+  box-shadow: 10px 10px 0px rgba(0,0,0,0.15);
+  overflow: hidden;
 }
 
-.notif-title {
-  font-weight: 800;
-  font-size: 14px;
-  color: var(--void-black);
-  font-family: 'Courier New', Courier, monospace;
-  margin-bottom: 4px;
-}
-
-.notif-desc {
-  font-size: 12px;
-  color: #555;
-  margin-bottom: 6px;
-  line-height: 1.4;
-  font-family: sans-serif;
-  font-weight: 500;
-}
-
-.notif-time {
-  font-size: 10px;
-  color: var(--void-black);
-  font-family: monospace;
-  background: #eee;
-  padding: 2px 4px;
-  align-self: flex-start;
-  border: 1px solid #ccc;
-}
-
-.notif-dot {
-  display: none; /* Replaced by left strip */
-}
-
-.panel-footer {
-  padding: 12px;
-  border-top: 4px solid var(--void-black);
+.board-header {
+  padding: 16px;
   text-align: center;
-  background: var(--void-black);
+  position: relative;
+  background: rgba(255,255,255,0.8);
+  border-bottom: 2px dashed var(--ink-color);
 }
 
-.panel-footer :deep(.n-button) {
-  color: var(--neon-cyan) !important;
-  font-family: monospace;
+.board-title {
+  font-size: 1.8rem;
+  margin: 0 0 12px 0;
+  transform: rotate(-2deg);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+}
+
+.board-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.tape-tab {
+  padding: 4px 12px;
+  background: white;
+  border: 1px solid var(--ink-color);
+  cursor: pointer;
+  position: relative;
+  font-size: 1.1rem;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+  transition: all 0.2s;
+}
+
+.tape-tab::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(0,0,0,0.1);
+  box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+}
+
+.tape-tab.active {
+  background: var(--accent-color);
+  color: white;
+  transform: scale(1.05) rotate(-1deg);
+  border-color: black;
+}
+
+.board-content {
+  max-height: 450px;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.empty-board {
+  text-align: center;
+  font-size: 1.5rem;
+  color: #999;
+  padding: 40px 0;
+  transform: rotate(2deg);
+}
+
+/* Sticky Note Styles */
+.sticky-note {
+  background: #fff;
+  padding: 16px;
+  position: relative;
+  border: 2px solid var(--ink-color);
+  box-shadow: 3px 4px 0px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease;
+  cursor: pointer;
+  
+  /* Lined Paper */
+  background-image: linear-gradient(#f0f0f0 1px, transparent 1px);
+  background-size: 100% 24px;
+  line-height: 24px;
+}
+
+.sticky-note:hover {
+  transform: scale(1.02) rotate(0deg) !important;
+  z-index: 10;
+  box-shadow: 5px 8px 0px rgba(0,0,0,0.15);
+}
+
+.tape-strip {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  width: 80px;
+  height: 24px;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-left: 1px dashed rgba(0,0,0,0.1);
+  border-right: 1px dashed rgba(0,0,0,0.1);
+  box-shadow: 0px 1px 1px rgba(0,0,0,0.05);
+  transform: translateX(-50%) rotate(-1deg);
+  opacity: 0.8;
+}
+
+/* Color Variants */
+.note-yellow { background-color: #fff7d1; transform: rotate(-1deg); }
+.note-blue { background-color: #d1f7ff; transform: rotate(1.5deg); }
+.note-pink { background-color: #ffd1d1; transform: rotate(-0.5deg); }
+
+.note-date {
+  font-size: 0.8rem;
+  color: #666;
+  text-align: right;
+  margin-bottom: 4px;
   font-weight: bold;
 }
-.panel-footer :deep(.n-button:hover) {
+
+.badges-container {
+  display: flex;
+  justify-content: flex-end; /* Align to right like the date */
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.important-mark {
+  color: #d63031;
+  font-weight: bold;
+  border: 2px solid #d63031;
+  padding: 0px 6px;
+  border-radius: 12px;
+  display: inline-block;
+  transform: rotate(-5deg);
+  background: rgba(255,255,255,0.5);
+  font-size: 0.8rem;
+}
+
+.pinned-mark {
+  color: #fff;
+  background: #d63031; /* Solid Red */
+  font-weight: bold;
+  border: 2px solid #d63031;
+  padding: 0px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  transform: rotate(2deg);
+  font-size: 0.8rem;
+  box-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+}
+
+.note-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-bottom: 2px solid var(--ink-color);
+  margin-bottom: 4px;
+  display: inline-block;
+}
+
+.note-text {
+  font-size: 1rem;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.board-footer {
+  padding: 12px;
+  background: rgba(0,0,0,0.02);
+  display: flex;
+  justify-content: space-around;
+  border-top: 2px dashed var(--ink-color);
+}
+
+.hand-btn {
+  font-family: var(--hand-font) !important;
+  font-size: 1.2rem !important;
+  font-weight: bold !important;
+  color: var(--ink-color) !important;
+}
+.hand-btn:hover {
   text-decoration: underline;
   text-decoration-style: wavy;
+  color: var(--accent-color) !important;
 }
+
+/* Read State - Crumpled or Faded */
+.sticky-note.read-note {
+  opacity: 0.7;
+  filter: grayscale(0.5);
+  transform: scale(0.98);
+  box-shadow: none;
+  border-color: #aaa;
+}
+.sticky-note.read-note:hover {
+  opacity: 1;
+  filter: none;
+}
+
+/* Animations */
+.note-pop-enter-active, .note-pop-leave-active {
+  transition: all 0.4s ease;
+}
+.note-pop-enter-from {
+  opacity: 0;
+  transform: translateY(20px) rotate(10deg);
+}
+.note-pop-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
 
 
 /* === Global Search Modal (Brutalist) === */
@@ -1135,7 +1360,6 @@ const triggerBoost = () => {
   box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
   transform: rotate(-1deg);
 }
-</style>
 /* === ROCKET LAUNCH ANIMATION === */
 .launch-overlay {
   position: fixed;
@@ -1252,3 +1476,98 @@ const triggerBoost = () => {
   opacity: 0;
 } 
 /* End Rocket Launch Animation */
+</style>
+
+<style>
+/* Global Styles for Modal (Unscoped to support Teleport) */
+.comic-modal-layout {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.comic-modal {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  border: 4px solid #000;
+  box-shadow: 15px 15px 0 rgba(0,0,0,0.5);
+  font-family: 'Courier New', sans-serif; /* Fallback */
+  opacity: 1 !important; /* Force opacity */
+  color: #000000;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure no transparency inheritance */
+.comic-modal * {
+  border-color: #000;
+}
+
+.modal-header {
+  background: #000;
+  color: #fff;
+  padding: 15px;
+}
+
+.modal-header h2 {
+  font-family: 'Bangers', cursive, sans-serif;
+  margin: 0;
+  font-size: 1.8rem;
+  color: #FFD700;
+  letter-spacing: 1px;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.detail-title {
+  font-family: 'Bangers', cursive, sans-serif; /* Or bold system font */
+  font-size: 1.8rem;
+  margin-bottom: 12px;
+  line-height: 1.2;
+}
+
+.detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 2px dashed #eee;
+}
+
+.meta-item {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.detail-content {
+  background: #f5f5f5; /* Light gray from Admin */
+  border: 2px solid #000;
+  padding: 20px;
+  white-space: pre-wrap; /* Essential for line breaks */
+  line-height: 1.6;
+  font-size: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+  color: #000; /* FORCE BLACK TEXT */
+}
+
+.detail-content img {
+  max-width: 100%;
+  border: 2px solid #000;
+  margin: 10px 0;
+}
+
+.detail-footer {
+  margin-top: 20px;
+  text-align: right;
+}
+
+.signature {
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  color: #555;
+}
+</style>

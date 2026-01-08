@@ -16,6 +16,13 @@ const routes = [
     component: () => import('@/views/Register.vue'),
     meta: { title: '注册', guest: true }
   },
+  // 邮箱验证页
+  {
+    path: '/verify-email',
+    name: 'VerifyEmail',
+    component: () => import('@/views/VerifyEmail.vue'),
+    meta: { title: '邮箱验证', requiresAuth: true }
+  },
   // 主布局
   {
     path: '/',
@@ -99,6 +106,12 @@ const routes = [
         name: 'OperationLogs',
         component: () => import('@/views/admin/OperationLogs.vue'),
         meta: { title: '操作日志' }
+      },
+      {
+        path: 'announcements',
+        name: 'AnnouncementManage',
+        component: () => import('@/views/admin/AnnouncementManage.vue'),
+        meta: { title: '公告管理' }
       }
     ]
   },
@@ -129,6 +142,21 @@ router.beforeEach((to, from, next) => {
       const { token, user } = JSON.parse(userState)
       isLoggedIn = !!token
       isAdmin = user?.role === 'admin'
+
+      // 检查邮箱是否已验证
+      if (isLoggedIn && to.path !== '/verify-email' && to.name !== 'Login' && to.name !== 'Register') {
+        const isEmailVerified = user?.isEmailVerified
+        if (!isEmailVerified) {
+          next('/verify-email')
+          return
+        }
+      }
+
+      // 已验证用户不能访问验证页
+      if (isLoggedIn && to.path === '/verify-email' && user?.isEmailVerified) {
+        next('/home')
+        return
+      }
     } catch (e) {
       console.error('解析用户状态失败', e)
     }

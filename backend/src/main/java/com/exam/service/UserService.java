@@ -55,6 +55,15 @@ public interface UserService extends IService<User> {
     User getByUsername(String username);
 
     /**
+     * 绑定/验证邮箱
+     * 
+     * @param userId 用户ID
+     * @param email 邮箱地址
+     * @return 是否成功
+     */
+    boolean bindEmail(Long userId, String email);
+
+    /**
      * 修改用户信息
      * 
      * @param user 用户信息

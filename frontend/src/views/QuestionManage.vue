@@ -489,10 +489,17 @@ const loadSubjects = async () => {
   try {
     const res = await getAllSubjects()
     if (res.data) {
-      const options = res.data.map(subject => ({
-        label: `${subject.name} (${subject.questionCount})`,
-        value: subject.name
-      }))
+      const options = res.data.map(subject => {
+        // 构建显示标签：科目名 (题数) - 用户名
+        let label = `${subject.name} (${subject.questionCount})`
+        if (subject.ownerName) {
+          label += ` - ${subject.ownerName}`
+        }
+        return {
+          label: label,
+          value: subject.name
+        }
+      })
       
       // 添加"全部科目"选项
       subjectOptions.value = [

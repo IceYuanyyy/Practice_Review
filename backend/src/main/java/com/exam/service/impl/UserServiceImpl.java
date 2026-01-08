@@ -57,6 +57,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             ? registerDTO.getNickname() 
             : registerDTO.getUsername());
         user.setEmail(registerDTO.getEmail());
+        user.setIsEmailVerified(true); // 注册时已通过验证
         user.setRole("user");
         user.setStatus(1);
         user.setCreateTime(LocalDateTime.now());
@@ -152,6 +153,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public User getByUsername(String username) {
         return baseMapper.selectByUsername(username);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean bindEmail(Long userId, String email) {
+        User user = new User();
+        user.setId(userId);
+        user.setEmail(email);
+        user.setIsEmailVerified(true);
+        user.setUpdateTime(LocalDateTime.now());
+        return baseMapper.updateById(user) > 0;
     }
 
     @Override

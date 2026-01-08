@@ -103,19 +103,14 @@ public class WrongBookServiceImpl extends ServiceImpl<WrongBookMapper, WrongBook
     @Override
     @Transactional
     public boolean markMastered(Long userId, Long questionId) {
-        log.info("标记已掌握: userId={}, questionId={}", userId, questionId);
+        log.info("标记已掌握并删除错题记录: userId={}, questionId={}", userId, questionId);
         
         LambdaQueryWrapper<WrongBook> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(WrongBook::getUserId, userId)
                .eq(WrongBook::getQuestionId, questionId);
         
-        // 设置熟练度为100表示已掌握
-        WrongBook wrongBook = this.getOne(wrapper);
-        if (wrongBook != null) {
-            wrongBook.setMasteryLevel(100);
-            return this.updateById(wrongBook);
-        }
-        return false;
+        // 直接从错题本删除该记录
+        return this.remove(wrapper);
     }
 
     @Override
@@ -148,6 +143,21 @@ public class WrongBookServiceImpl extends ServiceImpl<WrongBookMapper, WrongBook
         
         LambdaQueryWrapper<WrongBook> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(WrongBook::getUserId, userId);
+        
+        return this.remove(wrapper);
+    }
+    
+    @Override
+    @Transactional
+    public boolean removeByQuestionIds(Long userId, List<Long> questionIds) {
+        if (questionIds == null || questionIds.isEmpty()) {
+            return false;
+        }
+        log.info("按科目清空用户{}的错题, 题目数量: {}", userId, questionIds.size());
+        
+        LambdaQueryWrapper<WrongBook> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(WrongBook::getUserId, userId)
+               .in(WrongBook::getQuestionId, questionIds);
         
         return this.remove(wrapper);
     }

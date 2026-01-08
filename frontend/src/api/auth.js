@@ -14,13 +14,25 @@ export function login(data) {
 
 /**
  * 用户注册
- * @param {Object} data - { username, password, confirmPassword, nickname, email }
+ * @param {Object} data - { username, password, confirmPassword, nickname, email, verificationCode }
  */
 export function register(data) {
     return request({
         url: '/auth/register',
         method: 'post',
         data
+    })
+}
+
+/**
+ * 发送注册验证码
+ * @param {string} email - 邮箱地址
+ */
+export function sendVerificationCode(email) {
+    return request({
+        url: '/auth/send-code',
+        method: 'post',
+        params: { email }
     })
 }
 
@@ -41,6 +53,18 @@ export function getCurrentUser() {
     return request({
         url: '/auth/user',
         method: 'get'
+    })
+}
+
+/**
+ * 绑定/验证邮箱
+ * @param {Object} data - { email, code }
+ */
+export function bindEmail(data) {
+    return request({
+        url: '/auth/bind-email',
+        method: 'post',
+        data
     })
 }
 

@@ -71,3 +71,20 @@ sa-token:
   is-log: false
   # Token 临时有效期（30分钟无操作则过期，-1表示不限制）
   active-timeout: 1800
+
+# 邮件配置（QQ邮箱）
+spring.mail:
+  host: smtp.qq.com
+  port: 587
+  username: 2478686497@qq.com
+  password: wtvufqoicsgjdife
+  protocol: smtp
+  properties:
+    mail:
+      smtp:
+        auth: true
+        starttls:
+          enable: true
+          required: true
+  default-encoding: UTF-8
+

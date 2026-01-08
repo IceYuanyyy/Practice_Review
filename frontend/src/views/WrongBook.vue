@@ -75,10 +75,10 @@
             v-if="totalCount > 0" 
             text
             class="clear-link"
-            @click="clearWrongBook"
+            @click="showClearModal = true"
           >
             <template #icon><n-icon :component="TrashOutline"/></template>
-            全部撕掉
+            撕掉错题
           </n-button>
         </div>
       </div>
@@ -154,13 +154,47 @@
       </div>
     </div>
     </div>
+    
+    <!-- 清空错题弹窗 -->
+    <n-modal v-model:show="showClearModal" preset="dialog" title="撕掉错题" style="width: 420px">
+      <n-space vertical :size="16">
+        <n-alert type="warning" :show-icon="true">
+          选择要清空的科目，或清空全部错题。此操作不可恢复！
+        </n-alert>
+        
+        <n-form-item label="选择科目">
+          <n-select
+            v-model:value="clearSubject"
+            placeholder="选择科目（留空则清空全部）"
+            clearable
+            :options="subjectOptions"
+          />
+        </n-form-item>
+        
+        <n-text v-if="clearSubject" type="warning" style="font-size: 14px;">
+          将清空「{{ clearSubject }}」的所有错题
+        </n-text>
+        <n-text v-else type="error" style="font-size: 14px;">
+          将清空全部错题
+        </n-text>
+      </n-space>
+      
+      <template #action>
+        <n-space justify="end">
+          <n-button @click="showClearModal = false">取消</n-button>
+          <n-button type="error" @click="confirmClear">
+            {{ clearSubject ? '撕掉该科目' : '全部撕掉' }}
+          </n-button>
+        </n-space>
+      </template>
+    </n-modal>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { NIcon, NButton, NInput, NPagination, NCard, NForm, NFormItem, NSelect, useDialog, useMessage } from 'naive-ui'
+import { NIcon, NButton, NInput, NPagination, NCard, NForm, NFormItem, NSelect, NModal, NAlert, NSpace, NText, useDialog, useMessage } from 'naive-ui'
 import { TrashOutline, SearchOutline, HappyOutline, RefreshOutline } from '@vicons/ionicons5'
 import { usePracticeStore } from '@/stores/practice'
 import { clearWrongBook as clearWrongBookApi, getWrongBookPage, markMastered, getWrongBookSubjects } from '@/api/practice'
@@ -177,6 +211,10 @@ const showWrongQuestions = ref(true)
 const wrongQuestions = ref([])
 const currentPage = ref(1)
 const pageSize = ref(6)
+
+// 清空弹窗相关
+const showClearModal = ref(false)
+const clearSubject = ref(null)
 const totalCount = ref(0)
 const loading = ref(false)
 const searchKeyword = ref('')
@@ -299,29 +337,26 @@ const formatDate = (isoString) => {
   return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`
 }
 
-const clearWrongBook = () => {
-  dialog.warning({
-    title: '确认清空',
-    content: '要把墙上的便利贴都撕掉吗？',
-    positiveText: '是的，全部撕掉',
-    negativeText: '留着吧',
-    onPositiveClick: async () => {
-      try {
-        await clearWrongBookApi()
-        // 清空本地状态
-        practiceStore.wrongQuestions = []
-        wrongQuestions.value = []
-        totalCount.value = 0
-        currentPage.value = 1
-        message.success('错题墙已清空')
-        // 刷新数据
-        await loadSubjectStats()
-        await loadWrongQuestions()
-      } catch (error) {
-        message.error('操作失败')
-      }
+// 确认清空错题
+const confirmClear = async () => {
+  try {
+    await clearWrongBookApi(clearSubject.value || null)
+    // 清空本地状态
+    if (!clearSubject.value) {
+      practiceStore.wrongQuestions = []
+      wrongQuestions.value = []
+      totalCount.value = 0
     }
-  })
+    currentPage.value = 1
+    message.success(clearSubject.value ? `已清空「${clearSubject.value}」的错题` : '错题墙已清空')
+    // 刷新数据
+    showClearModal.value = false
+    clearSubject.value = null
+    await loadSubjectStats()
+    await loadWrongQuestions()
+  } catch (error) {
+    message.error('操作失败')
+  }
 }
 
 // 标记已掌握
@@ -341,10 +376,12 @@ const handleMaster = async (id) => {
 
 
 const retakeQuestion = (question) => {
-  // 跳转到练习页并带上题目信息
-  practiceStore.setCurrentQuestion(question)
-  router.push('/practice')
-  message.success('开始重新练习该题')
+  // 跳转到错题练习模式，指定该题的科目
+  router.push({
+    path: '/practice',
+    query: { wrongBookSubject: question.subject }
+  })
+  message.success(`开始复习「${question.subject}」的错题`)
 }
 </script>
 

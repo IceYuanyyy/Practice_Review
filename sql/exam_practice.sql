@@ -126,31 +126,6 @@ INSERT INTO `user` (`username`, `password`, `nickname`, `email`, `avatar_url`, `
 
 
 -- ----------------------------
--- Table structure for user_login_log
--- ----------------------------
-CREATE TABLE `user_operation_log` (
-  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `user_id` bigint NOT NULL COMMENT '用户ID',
-  `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '用户名',
-  `operation_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '操作类型',
-  `operation_desc` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '操作描述',
-  `operation_data` json DEFAULT NULL COMMENT '操作数据',
-  `request_ip` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '请求IP',
-  `request_location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '请求IP归属地',
-  `request_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '请求URL',
-  `request_params` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '请求参数',
-  `cost_time` bigint DEFAULT NULL COMMENT '执行耗时(毫秒)',
-  `request_method` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '请求方法',
-  `operation_status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '操作状态',
-  `error_message` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '错误信息',
-  `operation_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',
-  PRIMARY KEY (`id`) USING BTREE,
-  KEY `idx_user_id` (`user_id`) USING BTREE,
-  KEY `idx_operation_type` (`operation_type`) USING BTREE,
-  KEY `idx_operation_time` (`operation_time`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='用户操作日志表';
-
--- ----------------------------
 -- Table structure for user_operation_log
 -- ----------------------------
 DROP TABLE IF EXISTS `user_operation_log`;
@@ -162,6 +137,7 @@ CREATE TABLE `user_operation_log`  (
   `operation_desc` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '操作描述',
   `operation_data` json NULL COMMENT '操作数据',
   `request_ip` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '请求IP',
+  `request_location` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '请求IP归属地',
   `request_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '请求URL',
   `request_params` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '请求参数',
   `cost_time` bigint NULL DEFAULT NULL COMMENT '执行耗时(毫秒)',
@@ -214,3 +190,23 @@ CREATE TABLE `wrong_book`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '错题本' ROW_FORMAT = DYNAMIC;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- ----------------------------
+-- Table structure for announcement
+-- ----------------------------
+DROP TABLE IF EXISTS `announcement`;
+CREATE TABLE `announcement` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `title` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '公告标题',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '公告内容(支持HTML)',
+  `user_id` bigint NOT NULL COMMENT '发布者ID(管理员)',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态:0-草稿, 1-已发布, 2-已撤回',
+  `is_pinned` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否置顶:0-否, 1-是',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_status`(`status` ASC) USING BTREE,
+  INDEX `idx_is_pinned`(`is_pinned` ASC) USING BTREE,
+  INDEX `idx_create_time`(`create_time` DESC) USING BTREE,
+  INDEX `idx_user_id`(`user_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统公告表' ROW_FORMAT = DYNAMIC;

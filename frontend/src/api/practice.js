@@ -33,12 +33,14 @@ export function getStatistics() {
 }
 
 /**
- * 清空错题本
+ * 清空错题本（支持按科目筛选）
+ * @param {string} subject - 可选，科目名称，不传则清空全部
  */
-export function clearWrongBook() {
+export function clearWrongBook(subject) {
   return request({
     url: '/practice/wrong',
-    method: 'delete'
+    method: 'delete',
+    params: subject ? { subject } : {}
   })
 }
 

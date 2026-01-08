@@ -128,14 +128,53 @@
         </button>
       </div>
     </div>
+
+    <!-- 4. Announcements: Bulletin Board -->
+    <div class="bulletin-section" v-if="announcements.length > 0">
+      <h3 class="section-label">SYSTEM_BULLETIN // 系统公告</h3>
+      <div class="bulletin-board">
+        <div 
+          v-for="item in announcements" 
+          :key="item.id" 
+          class="bulletin-card"
+          :class="{ 'pinned': item.isPinned }"
+          @click="openAnnouncementDetail(item)"
+        >
+          <div class="bulletin-pin" v-if="item.isPinned">📌</div>
+          <h4 class="bulletin-title">{{ item.title }}</h4>
+          <div class="bulletin-meta">
+            <span class="publisher">{{ item.publisherName || '管理员' }}</span>
+            <span class="time">{{ formatTime(item.createTime) }}</span>
+          </div>
+          <p class="bulletin-preview">{{ truncate(item.content, 80) }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Announcement Detail Modal -->
+    <n-modal v-model:show="showAnnouncementModal" transform-origin="center">
+      <div class="announcement-modal">
+        <div class="modal-header">
+          <h2>{{ selectedAnnouncement?.title }}</h2>
+          <button class="close-btn" @click="showAnnouncementModal = false">✕</button>
+        </div>
+        <div class="modal-body" v-if="selectedAnnouncement">
+          <div class="modal-meta">
+            <span>发布者: {{ selectedAnnouncement.publisherName || '管理员' }}</span>
+            <span>时间: {{ formatTime(selectedAnnouncement.createTime) }}</span>
+          </div>
+          <div class="modal-content">{{ selectedAnnouncement.content }}</div>
+        </div>
+      </div>
+    </n-modal>
   </div>
 </template>
-
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useMessage } from 'naive-ui'
+import { useMessage, NModal } from 'naive-ui'
 import { getStatistics } from '@/api/practice'
+import { getAnnouncements } from '@/api/announcement'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
@@ -148,6 +187,11 @@ const statistics = ref({
   wrongCount: 0,
   correctRate: 0
 })
+
+// 公告相关
+const announcements = ref([])
+const showAnnouncementModal = ref(false)
+const selectedAnnouncement = ref(null)
 
 const loadStatistics = async () => {
   try {
@@ -164,8 +208,35 @@ const loadStatistics = async () => {
   }
 }
 
+const loadAnnouncements = async () => {
+  try {
+    const res = await getAnnouncements({ page: 1, size: 5 })
+    if (res.code === 200) {
+      announcements.value = res.data.records || []
+    }
+  } catch (error) {
+    console.error('加载公告失败:', error)
+  }
+}
+
+const openAnnouncementDetail = (item) => {
+  selectedAnnouncement.value = item
+  showAnnouncementModal.value = true
+}
+
+const formatTime = (timeStr) => {
+  if (!timeStr) return ''
+  return timeStr.replace('T', ' ').substring(0, 16)
+}
+
+const truncate = (str, len) => {
+  if (!str) return ''
+  return str.length > len ? str.substring(0, len) + '...' : str
+}
+
 onMounted(() => {
   loadStatistics()
+  loadAnnouncements()
 })
 </script>
 
@@ -496,5 +567,136 @@ onMounted(() => {
   .chaos-grid { flex-direction: column; gap: 30px; }
   .chaos-card { transform: none !important; width: 100%; }
   .control-panel { grid-template-columns: 1fr; }
+}
+
+/* 4. Bulletin Board */
+.bulletin-section {
+  margin-top: 60px;
+  position: relative;
+  z-index: 1;
+}
+
+.bulletin-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  padding: 0 20px;
+}
+
+.bulletin-card {
+  background: white;
+  border: 3px solid var(--void-black);
+  padding: 20px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 6px 6px 0 var(--void-black);
+}
+
+.bulletin-card:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: 9px 9px 0 var(--void-black);
+}
+
+.bulletin-card.pinned {
+  background: linear-gradient(135deg, #fffbeb 0%, #fff 100%);
+  border-color: #f59e0b;
+}
+
+.bulletin-pin {
+  position: absolute;
+  top: -8px;
+  right: 10px;
+  font-size: 20px;
+}
+
+.bulletin-title {
+  font-family: Impact, sans-serif;
+  font-size: 18px;
+  margin: 0 0 10px 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.bulletin-meta {
+  display: flex;
+  gap: 15px;
+  font-family: monospace;
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 2px dashed #eee;
+}
+
+.bulletin-preview {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Announcement Modal */
+.announcement-modal {
+  background: white;
+  border: 4px solid var(--void-black);
+  max-width: 600px;
+  width: 90vw;
+  box-shadow: 12px 12px 0 rgba(0,0,0,0.3);
+}
+
+.announcement-modal .modal-header {
+  background: var(--void-black);
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.announcement-modal .modal-header h2 {
+  margin: 0;
+  font-family: Impact, sans-serif;
+  font-size: 22px;
+  text-transform: uppercase;
+}
+
+.announcement-modal .close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+}
+
+.announcement-modal .close-btn:hover {
+  color: var(--neon-yellow);
+}
+
+.announcement-modal .modal-body {
+  padding: 20px;
+}
+
+.announcement-modal .modal-meta {
+  display: flex;
+  gap: 20px;
+  font-family: monospace;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px dashed #eee;
+}
+
+.announcement-modal .modal-content {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #333;
+  white-space: pre-wrap;
+  max-height: 400px;
+  overflow-y: auto;
 }
 </style>

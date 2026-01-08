@@ -43,6 +43,11 @@ public class User {
     private String email;
 
     /**
+     * 邮箱是否已验证
+     */
+    private Boolean isEmailVerified;
+
+    /**
      * 头像URL
      */
     private String avatarUrl;

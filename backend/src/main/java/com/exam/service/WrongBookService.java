@@ -68,4 +68,13 @@ public interface WrongBookService extends IService<WrongBook> {
      * @return 是否成功
      */
     boolean clearAllWrongQuestions(Long userId);
+    
+    /**
+     * 按题目ID列表删除错题记录
+     * 
+     * @param userId 用户ID
+     * @param questionIds 要删除的题目ID列表
+     * @return 是否成功
+     */
+    boolean removeByQuestionIds(Long userId, List<Long> questionIds);
 }
