@@ -30,32 +30,11 @@
 ## 📅 更新日志
 
 <details open>
-<summary>v1.2.3 (2026-01-08) · 📑 题库转换日志</summary>
+<summary>v1.1.x (2026-01-08) · 合并更新</summary>
 
-- **🧾 转换日志入库**：题库转换（TXT→Excel）全量记录到操作日志，含原始文件与转换结果
-- **🛠️ 管理员在线查看**：操作日志详情页新增 CONVERT 类型，支持下载原始 TXT 与生成的 Excel
-- **📦 前端自动上报**：QuestionConverter 转换成功后自动上传 Base64 内容并记录科目/题量统计
-- **🗂️ SQL 迁移脚本**：新增 `sql/add_convert_file_fields.sql`，为 `user_operation_log` 增加文件字段
-
-</details>
-
-<details>
-<summary>v1.2.2 (2026-01-08) · 🌍 IP归属地追踪</summary>
-
-- **🌐 IP归属地查询**：新增 `IpUtil` 工具类，精确获取用户真实IP地址
-- **📍 地理位置显示**：登录日志和操作日志显示IP归属地，精确到省市（如"广东省深圳市"）
-- **🔄 多API容错**：集成太平洋网络、ip-api.com等多个免费API，自动容错切换
-- **⚡ 智能缓存**：IP归属地结果缓存，避免重复请求，提升性能
-- **🛡️ 代理支持**：支持 X-Forwarded-For、X-Real-IP 等多种代理头获取真实IP
-
-</details>
-
-<details>
-<summary>v1.2.1 (2026-01-08) · 🛠️ 稳定性修复</summary>
-
-- **🎯 练习体验修正**：调整答题卡样式优先级，正确/错误状态在错题复习中可准确高亮
-- **📚 错题清空一致性**：后端扩展清空 API 覆盖 `wrong_book` 表并同步前端状态，清零“灵感碎片”统计
-- **📝 题目编辑增强**：题目管理对话框新增 E/F 选项输入与答案选择，持久化六选项题型避免练习页缺项
+- **📑 题库转换日志**：TXT→Excel 转换全量入库，后台可在线查看 CONVERT 类型并下载原始/生成文件；QuestionConverter 自动上报 Base64 内容并记录科目与题量；新增 `sql/add_convert_file_fields.sql` 为 `user_operation_log` 增加文件字段
+- **🌍 IP 归属地追踪**：新增 `IpUtil` 获取真实 IP，登录/操作日志显示省市级归属地；接入多 API 自动容错，结果缓存；支持 X-Forwarded-For、X-Real-IP 等代理头
+- **🛠️ 稳定性修复**：答题卡样式优先级修正，错题复习状态高亮准确；清空错题时同步 `wrong_book` 并刷新前端；题目编辑新增 E/F 选项与答案选择，六选项题型持久化
 
 </details>
 
