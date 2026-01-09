@@ -15,6 +15,9 @@ public class QuestionImportDTO {
     @ExcelProperty("题目")
     private String content;
 
+    @ExcelProperty("图片URL")
+    private String imageUrl;
+
     @ExcelProperty("选项A")
     private String optionA;
 

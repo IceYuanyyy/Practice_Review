@@ -15,6 +15,9 @@ public class JudgeQuestionImportDTO {
     @ExcelProperty("题目")
     private String content;
 
+    @ExcelProperty("图片URL")
+    private String imageUrl;
+
     @ExcelProperty("答案")
     private String answer;
 

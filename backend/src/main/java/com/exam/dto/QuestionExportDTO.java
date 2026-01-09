@@ -28,6 +28,9 @@ public class QuestionExportDTO {
     @ExcelProperty("题目")
     private String content;
 
+    @ExcelProperty("图片URL")
+    private String imageUrl;
+
     @ExcelProperty("选项A")
     private String optionA;
 
@@ -64,6 +67,7 @@ public class QuestionExportDTO {
         dto.setType(question.getType().equals("choice") ? "选择题" : "判断题");
         dto.setSubject(question.getSubject());
         dto.setContent(question.getContent());
+        dto.setImageUrl(question.getImageUrl());
         dto.setAnswer(question.getAnswer());
         dto.setAnalysis(question.getAnalysis());
         

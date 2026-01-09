@@ -169,6 +169,7 @@ public class ChoiceQuestionImportListener extends AnalysisEventListener<Question
         }
         
         question.setContent(dto.getContent());
+        question.setImageUrl(dto.getImageUrl());
         
         // 构建选项 JSON 数组
         List<String> optionsList = new ArrayList<>();

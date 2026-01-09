@@ -283,6 +283,7 @@ const parseQuestionText = (content) => {
         content: questionMatch[2].trim(),
         options: {},
         analysis: '', // 新增：解析字段
+        imageUrl: '', // 新增：图片URL
         subject: subjectName.value || '未分类',
         difficulty: 'medium'
       }
@@ -309,6 +310,14 @@ const parseQuestionText = (content) => {
     const analysisMatch = line.match(/^(?:答案)?解析[：:]\s*(.+)/)
     if (analysisMatch && currentQuestion) {
       currentQuestion.analysis = analysisMatch[1].trim()
+      continue
+    }
+
+    // 匹配图片URL (图片：... 或 Image：...)
+    const imageMatch = line.match(/^(?:图片|Image)[：:]\s*(.+)/i)
+    if (imageMatch && currentQuestion) {
+      currentQuestion.imageUrl = imageMatch[1].trim()
+      continue
     }
   }
   
@@ -366,12 +375,13 @@ const convertToExcel = async () => {
     
     // 创建选择题工作表
     const choiceData = [
-      ['题目', '选项A', '选项B', '选项C', '选项D', '选项E', '答案', '解析', '科目', '难度']
+      ['题目', '图片URL', '选项A', '选项B', '选项C', '选项D', '选项E', '答案', '解析', '科目', '难度']
     ]
     
     for (const q of choiceQuestions) {
       choiceData.push([
         q.content,
+        q.imageUrl || '',
         q.options['A'] || '',
         q.options['B'] || '',
         q.options['C'] || '',
@@ -387,7 +397,7 @@ const convertToExcel = async () => {
     const wsChoice = XLSX.utils.aoa_to_sheet(choiceData)
     
     wsChoice['!cols'] = [
-      { wch: 50 }, { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 30 },
+      { wch: 50 }, { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 30 },
       { wch: 10 }, { wch: 40 }, { wch: 12 }, { wch: 10 }
     ]
     
@@ -396,7 +406,7 @@ const convertToExcel = async () => {
     // 创建判断题工作表（如果有）
     if (judgeQuestions.length > 0) {
       const judgeData = [
-        ['题目', '答案', '解析', '科目', '难度']
+        ['题目', '图片URL', '答案', '解析', '科目', '难度']
       ]
       
       for (const q of judgeQuestions) {
@@ -411,6 +421,7 @@ const convertToExcel = async () => {
         
         judgeData.push([
           q.content,
+          q.imageUrl || '',
           answer,
           q.analysis || '', // 使用解析后的 analysis
           subjectName.value || '未分类',
@@ -420,7 +431,7 @@ const convertToExcel = async () => {
       
       const wsJudge = XLSX.utils.aoa_to_sheet(judgeData)
       wsJudge['!cols'] = [
-        { wch: 60 }, { wch: 10 }, { wch: 40 }, { wch: 12 }, { wch: 10 }
+        { wch: 60 }, { wch: 30 }, { wch: 10 }, { wch: 40 }, { wch: 12 }, { wch: 10 }
       ]
       
       XLSX.utils.book_append_sheet(wb, wsJudge, '判断题')

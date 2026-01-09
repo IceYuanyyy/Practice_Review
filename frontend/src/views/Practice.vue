@@ -198,6 +198,14 @@
 
             <div class="question-content">
               {{ currentQuestion.content }}
+              <div v-if="currentQuestion.imageUrl" class="question-image-wrapper">
+                <n-image
+                  :src="currentQuestion.imageUrl"
+                  object-fit="contain"
+                  style="max-height: 300px; max-width: 100%; border-radius: 8px; margin-top: 16px;"
+                  fallback-src="https://via.placeholder.com/400x300?text=Image+Load+Error"
+                />
+              </div>
             </div>
 
             <div class="options-list">
@@ -520,7 +528,7 @@
 <script setup>
 import { ref, computed, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useMessage, useDialog, NCard, NForm, NFormItem, NGrid, NGridItem, NSelect, NButton, NTag, NText, NIcon, NModal, NInput, NProgress, NScrollbar, NSwitch } from 'naive-ui'
+import { useMessage, useDialog, NCard, NForm, NFormItem, NGrid, NGridItem, NSelect, NButton, NTag, NText, NIcon, NModal, NInput, NProgress, NScrollbar, NSwitch, NImage } from 'naive-ui'
 import { CloseOutline, CheckmarkCircle, CloseCircle, CheckmarkOutline, SearchOutline, ArrowBackOutline, ArrowForwardOutline, SchoolOutline, BookOutline, RefreshOutline } from '@vicons/ionicons5'
 import { getRandomQuestion } from '@/api/question'
 import { submitAnswer as submitAnswerApi, startRound, nextRoundQuestion, prevRoundQuestion, resetRound, searchQuestions, startWrongBookPractice, nextWrongQuestion, jumpRoundQuestion, getRoundResults } from '@/api/practice'

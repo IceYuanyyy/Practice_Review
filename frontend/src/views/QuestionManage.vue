@@ -244,6 +244,14 @@
             />
           </n-form-item>
 
+          <n-form-item label="图片URL" path="imageUrl" label-placement="top">
+            <n-input
+              v-model:value="formData.imageUrl"
+              placeholder="请输入图片URL（可选）"
+              clearable
+            />
+          </n-form-item>
+
           <div v-if="['single-choice', 'multiple-choice', 'choice'].includes(formData.type)" class="options-container">
             <n-grid :cols="2" :x-gap="24" :y-gap="12">
               <n-grid-item>
@@ -470,6 +478,7 @@ const formData = reactive({
   optionF: '',
   answer: '',
   analysis: '',
+  imageUrl: '',
   difficulty: 'medium'
 })
 
@@ -628,6 +637,37 @@ const columns = [
         ])
     }
   },
+  {
+    title: '图片',
+    key: 'imageUrl',
+    width: 60,
+    align: 'center',
+    render: (row) => {
+      if (!row.imageUrl) return '-'
+      return h(
+        'div',
+        { 
+          style: { 
+            width: '40px', 
+            height: '40px', 
+            borderRadius: '4px', 
+            overflow: 'hidden',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '1px solid #eee'
+          } 
+        },
+        [
+          h('img', {
+            src: row.imageUrl,
+            style: { width: '100%', height: '100%', objectFit: 'cover' },
+            onerror: (e) => { e.target.src = 'https://via.placeholder.com/40?text=Err' } // Simple fallback
+          })
+        ]
+      )
+    }
+  },
   { 
      title: '题目内容', 
      key: 'content', 
@@ -740,6 +780,7 @@ const handleEdit = (row) => {
   formData.content = row.content || ''
   formData.answer = row.answer || ''
   formData.analysis = row.analysis || ''
+  formData.imageUrl = row.imageUrl || ''
   formData.difficulty = row.difficulty || 'medium'
   
   // 解析选项

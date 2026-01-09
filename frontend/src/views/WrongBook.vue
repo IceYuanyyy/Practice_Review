@@ -122,6 +122,16 @@
             </div>
 
             <p class="question-text">{{ question.content }}</p>
+            <div v-if="question.imageUrl" class="question-image-container" style="margin-bottom: 8px;">
+               <n-image
+                 :src="question.imageUrl"
+                  width="100%"
+                  height="120"
+                  object-fit="cover"
+                  style="border-radius: 4px;"
+                  preview-disabled
+               />
+            </div>
             
             <div class="note-actions">
               <n-button text class="action-link master" @click="handleMaster(question.id)">

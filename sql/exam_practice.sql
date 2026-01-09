@@ -68,6 +68,7 @@ CREATE TABLE `question`  (
   `display_order` int NULL DEFAULT 0 COMMENT '显示顺序（按类型分组，从1开始）',
   `subject` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '未分类' COMMENT '科目',
   `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '题目内容',
+  `image_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '题目图片URL',
   `options` json NULL COMMENT '选项（选择题用，格式：[\"A:选项1\",\"B:选项2\",\"C:选项3\",\"D:选项4\"]）',
   `answer` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '答案',
   `analysis` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '答案解析',

@@ -47,6 +47,11 @@ public class Question {
     private String content;
 
     /**
+     * 题目图片URL
+     */
+    private String imageUrl;
+
+    /**
      * 选项（选择题用）
      * JSON格式：["A:选项1","B:选项2","C:选项3","D:选项4"]
      */

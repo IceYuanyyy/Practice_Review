@@ -155,6 +155,7 @@ public class JudgeQuestionImportListener extends AnalysisEventListener<JudgeQues
         
         question.setType("judge");
         question.setContent(dto.getContent());
+        question.setImageUrl(dto.getImageUrl());
         question.setOptions(null); // 判断题没有选项
         
         // 标准化答案格式
