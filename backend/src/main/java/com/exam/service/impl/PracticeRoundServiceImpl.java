@@ -69,10 +69,13 @@ public class PracticeRoundServiceImpl extends ServiceImpl<PracticeRoundMapper, P
         wrapper.eq(Question::getSubject, subject)
                .select(Question::getId);
         
+        // 权限过滤：根据ownerId参数决定查询范围
         if (ownerId != null) {
             if (ownerId == -1L) {
-                wrapper.isNull(Question::getOwnerId);
+                // 管理员查看"公共题库"：查询所有用户的题目（不添加owner_id过滤）
+                // 不添加任何条件，让SQL查询该科目下的所有题目
             } else {
+                // 查询指定用户的题目
                 wrapper.eq(Question::getOwnerId, ownerId);
             }
         }
