@@ -73,10 +73,11 @@ public class SubjectController {
             // 普通用户：仅查看自己的题目
             wrapper.eq("owner_id", userId);
         } else {
-            // 管理员: 支持按 ownerId 筛选
+        // 管理员: 支持按 ownerId 筛选
             if (ownerId != null) {
                 if (ownerId == -1L) {
-                    wrapper.isNull("owner_id");
+                    // 公共题库：查看所有人的题目（不做过滤，相当于全部来源）
+                    // 注意：不添加任何条件，让管理员看到所有题目
                 } else {
                     wrapper.eq("owner_id", ownerId);
                 }

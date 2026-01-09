@@ -64,15 +64,6 @@
                         🔒 我的题库
                       </div>
                     </div>
-                    <n-select 
-                      v-if="userOptions.length > 2"
-                      v-model:value="filters.ownerId" 
-                      :options="userOptions" 
-                      placeholder="或选择其他来源" 
-                      class="sketch-select"
-                      style="margin-top: 12px;"
-                      clearable
-                      />
                   </n-grid-item>
                   <n-grid-item v-else>
                     <div class="hand-label">👤 题库来源</div>
@@ -826,7 +817,6 @@ onMounted(async () => {
   document.addEventListener('fullscreenchange', handleFullscreenChange)
 
   await loadProfile()
-  await loadLastFilter()
   // 非管理员强制 ownerId 为自己，管理员保持loadProfile设置的默认值
   if (!isAdmin.value && currentUser.value?.id) {
     filters.ownerId = currentUser.value.id

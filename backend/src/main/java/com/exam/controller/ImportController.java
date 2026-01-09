@@ -24,6 +24,7 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.exam.util.IpUtil;
 import java.util.stream.Collectors;
 
 /**
@@ -111,7 +112,10 @@ public class ImportController {
         opLog.setOperationDesc("Excel批量导入题目");
         opLog.setRequestMethod(request.getMethod());
         opLog.setRequestUrl(request.getRequestURI());
-        opLog.setRequestIp(getClientIp(request));
+        // 使用IpUtil获取真实IP和归属地
+        String clientIp = IpUtil.getClientIp(request);
+        opLog.setRequestIp(clientIp);
+        opLog.setRequestLocation(IpUtil.getIpLocation(clientIp));
         opLog.setOperationTime(java.time.LocalDateTime.now());
         
         // 记录文件名和科目信息
@@ -249,25 +253,7 @@ public class ImportController {
         }
     }
     
-    /**
-     * 获取客户端IP
-     */
-    private String getClientIp(javax.servlet.http.HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-        if (ip != null && ip.contains(",")) {
-            ip = ip.split(",")[0].trim();
-        }
-        return ip;
-    }
+    // 注意：IP获取逻辑已迁移至 IpUtil 工具类
 
     /**
      * 导出所有可见题目（包含公共题库）到 Excel
@@ -350,7 +336,10 @@ public class ImportController {
         opLog.setOperationDesc("题库转换: " + sourceFileName + " → " + resultFileName + " (选择题:" + choiceCount + ", 判断题:" + judgeCount + ")");
         opLog.setRequestMethod(request.getMethod());
         opLog.setRequestUrl(request.getRequestURI());
-        opLog.setRequestIp(getClientIp(request));
+        // 使用IpUtil获取真实IP和归属地
+        String clientIp = IpUtil.getClientIp(request);
+        opLog.setRequestIp(clientIp);
+        opLog.setRequestLocation(IpUtil.getIpLocation(clientIp));
         opLog.setOperationTime(java.time.LocalDateTime.now());
         
         // 记录文件信息
