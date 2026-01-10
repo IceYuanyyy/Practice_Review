@@ -694,8 +694,9 @@ const columns = [
         [
           h('img', {
             src: row.imageUrl,
+            referrerpolicy: 'no-referrer',
             style: { width: '100%', height: '100%', objectFit: 'cover' },
-            onerror: (e) => { e.target.src = 'https://via.placeholder.com/40?text=Err' } // Simple fallback
+            onerror: (e) => { e.target.style.display = 'none'; e.target.parentNode.innerHTML = '<span style="font-size: 10px; color: #9ca3af;">加载失败</span>' }
           })
         ]
       )

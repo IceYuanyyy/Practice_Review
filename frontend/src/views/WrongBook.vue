@@ -125,6 +125,7 @@
             <div v-if="question.imageUrl" class="question-image-container" style="margin-bottom: 8px;">
                <n-image
                  :src="question.imageUrl"
+                  :img-props="{ referrerpolicy: 'no-referrer' }"
                   width="100%"
                   height="120"
                   object-fit="cover"

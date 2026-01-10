@@ -198,14 +198,21 @@
 
             <div class="question-content">
               {{ currentQuestion.content }}
-              <div v-if="currentQuestion.imageUrl" class="question-image-wrapper">
-                <n-image
-                  :src="currentQuestion.imageUrl"
-                  object-fit="contain"
-                  style="max-height: 300px; max-width: 100%; border-radius: 8px; margin-top: 16px;"
-                  fallback-src="https://via.placeholder.com/400x300?text=Image+Load+Error"
-                />
-              </div>
+            </div>
+
+            <div v-if="currentQuestion.imageUrl" class="question-image-wrapper">
+              <n-image
+                :src="currentQuestion.imageUrl"
+                object-fit="contain"
+                :img-props="{ referrerpolicy: 'no-referrer' }"
+                show-toolbar-tooltip
+              >
+                <template #placeholder>
+                  <div class="image-placeholder">
+                    加载中...
+                  </div>
+                </template>
+              </n-image>
             </div>
 
             <div class="options-list">
@@ -2171,8 +2178,45 @@ const handleResetRound = () => {
   font-weight: 600; 
   line-height: 1.6; 
   color: #2c3e50; 
-  margin-bottom: 32px; 
+  margin-bottom: 16px; 
   font-family: 'Didact Gothic', 'Patrick Hand', sans-serif;
+}
+
+/* 题目图片样式 */
+.question-image-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 16px 0 24px 0;
+  padding: 12px;
+  background: #fafafa;
+  border: 2px dashed #e5e7eb;
+  border-radius: 12px;
+}
+
+.question-image-wrapper :deep(.n-image) {
+  max-width: 100%;
+  max-height: 250px;
+}
+
+.question-image-wrapper :deep(.n-image img) {
+  max-width: 480px;
+  max-height: 250px;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  height: 120px;
+  color: #9ca3af;
+  font-size: 14px;
+  background: #f3f4f6;
+  border-radius: 8px;
 }
 
 /* Options as Doodle Boxes */
