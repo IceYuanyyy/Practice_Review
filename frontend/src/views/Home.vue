@@ -167,6 +167,31 @@
         </div>
       </div>
     </n-modal>
+
+    <!-- Unread Announcement Modal (强制阅读) -->
+    <n-modal v-model:show="showUnreadModal" :mask-closable="false" transform-origin="center">
+      <div class="announcement-modal" style="border-color: var(--neon-magenta);">
+        <div class="modal-header" style="background: linear-gradient(135deg, var(--void-black) 0%, #1a1a2e 100%);">
+          <h2>📢 新公告提醒</h2>
+          <button class="close-btn" @click="handleCloseUnreadModal">✕</button>
+        </div>
+        <div class="modal-body" v-if="unreadAnnouncement">
+          <h3 style="margin: 0 0 12px 0; font-size: 18px;">{{ unreadAnnouncement.title }}</h3>
+          <div class="modal-meta">
+            <span>发布者: {{ unreadAnnouncement.publisherName || '管理员' }}</span>
+            <span>时间: {{ formatTime(unreadAnnouncement.createTime) }}</span>
+          </div>
+          <div class="modal-content">{{ unreadAnnouncement.content }}</div>
+        </div>
+        <div style="padding: 16px; border-top: 2px dashed #eee; text-align: center;">
+          <button class="industrial-btn btn-primary" style="display: inline-block; width: auto; padding: 12px 32px;" @click="handleCloseUnreadModal">
+            <div class="btn-content">
+              <span class="btn-title">我已阅读</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </n-modal>
   </div>
 </template>
 <script setup>
@@ -174,7 +199,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMessage, NModal } from 'naive-ui'
 import { getStatistics } from '@/api/practice'
-import { getAnnouncements } from '@/api/announcement'
+import { getAnnouncements, getUnreadAnnouncements, markAnnouncementAsRead } from '@/api/announcement'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
@@ -192,6 +217,10 @@ const statistics = ref({
 const announcements = ref([])
 const showAnnouncementModal = ref(false)
 const selectedAnnouncement = ref(null)
+
+// 未读公告弹窗
+const showUnreadModal = ref(false)
+const unreadAnnouncement = ref(null)
 
 const loadStatistics = async () => {
   try {
@@ -219,6 +248,33 @@ const loadAnnouncements = async () => {
   }
 }
 
+// 检查未读公告并弹窗提醒
+const checkUnreadAnnouncements = async () => {
+  try {
+    const res = await getUnreadAnnouncements()
+    if (res.code === 200 && res.data && res.data.length > 0) {
+      // 显示第一条未读公告
+      unreadAnnouncement.value = res.data[0]
+      showUnreadModal.value = true
+    }
+  } catch (error) {
+    console.error('检查未读公告失败:', error)
+  }
+}
+
+// 关闭未读公告弹窗时标记已读
+const handleCloseUnreadModal = async () => {
+  if (unreadAnnouncement.value) {
+    try {
+      await markAnnouncementAsRead(unreadAnnouncement.value.id)
+    } catch (e) {
+      console.error('标记已读失败:', e)
+    }
+  }
+  showUnreadModal.value = false
+  unreadAnnouncement.value = null
+}
+
 const openAnnouncementDetail = (item) => {
   selectedAnnouncement.value = item
   showAnnouncementModal.value = true
@@ -237,6 +293,8 @@ const truncate = (str, len) => {
 onMounted(() => {
   loadStatistics()
   loadAnnouncements()
+  // 检查未读公告并弹窗提醒
+  checkUnreadAnnouncements()
 })
 </script>
 

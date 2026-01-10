@@ -104,6 +104,16 @@ public class ImportController {
             log.warn("获取用户信息失败", e);
         }
 
+        // 检查题库名称是否已存在（针对当前用户）
+        if (subject != null && !subject.trim().isEmpty()) {
+            long count = questionService.count(new QueryWrapper<Question>()
+                .eq("owner_id", userId)
+                .eq("subject", subject.trim()));
+            if (count > 0) {
+                return Result.error("题库名称 \"" + subject + "\" 已存在，请使用其他名称");
+            }
+        }
+
         // 1. 创建并保存操作日志
         com.exam.entity.UserOperationLog opLog = new com.exam.entity.UserOperationLog();
         opLog.setUserId(userId);

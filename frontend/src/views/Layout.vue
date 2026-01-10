@@ -124,6 +124,16 @@
                <span class="fun-text">✨ Code with Flow</span>
              </div>
              <n-divider vertical />
+             <!-- Theme Switch -->
+             <n-switch :value="isDark" @update:value="themeStore.toggleTheme" size="medium">
+                <template #checked-icon>
+                  <n-icon :component="MoonOutline" color="#fff" />
+                </template>
+                <template #unchecked-icon>
+                  <n-icon :component="SunnyOutline" color="#F59E0B" />
+                </template>
+             </n-switch>
+             <n-divider vertical />
              <n-switch :value="isEffectsEnabled" @update:value="toggleEffects" size="medium">
                 <template #checked-icon>
                   <n-icon :component="SparklesOutline" color="#EAB308" />
@@ -370,15 +380,22 @@ import {
   PulseOutline,
 
   HardwareChipOutline,
-  RocketOutline
+  RocketOutline,
+  MoonOutline,
+  SunnyOutline
 } from '@vicons/ionicons5'
 import { useUserStore } from '@/stores/user'
+import { useThemeStore } from '@/stores/theme' // Import Theme Store
+import { storeToRefs } from 'pinia'
 import { isEffectsEnabled, toggleEffects } from '@/utils/mouseEffects'
 
 const router = useRouter()
 const route = useRoute()
 const message = useMessage()
+
 const userStore = useUserStore()
+const themeStore = useThemeStore()
+const { isDark } = storeToRefs(themeStore)
 const collapsed = ref(false)
 const showMobileMenu = ref(false)
 
@@ -630,15 +647,20 @@ const triggerBoost = () => {
   --neon-yellow: #F5E400;
   --neon-cyan: #00E5FF;
   --neon-magenta: #FF3EA5;
-  --void-black: #050505;
-  --off-white: #FFFDF7;
-  --grid-line: #e0e0e0;
+  --void-black: var(--color-n-900, #050505);
+  --off-white: var(--color-n-50, #FFFDF7);
+  --grid-line: var(--color-n-200, #e0e0e0);
   
   /* Dot Matrix Background (Clean Industrial) */
   background-color: var(--off-white);
   background-image: radial-gradient(rgba(0,0,0,0.1) 2px, transparent 2px);
   background-size: 24px 24px;
   font-family: 'Courier New', Courier, monospace;
+}
+
+html.dark .main-layout {
+   --neon-yellow: #FACC15;
+   background-image: radial-gradient(rgba(255,255,255,0.1) 2px, transparent 2px);
 }
 
 .bg-transparent {

@@ -98,3 +98,26 @@ export function toggleAnnouncementPin(id, pinned) {
         data: { pinned }
     })
 }
+
+// ==================== 用户端已读管理 ====================
+
+/**
+ * 获取未读公告列表
+ */
+export function getUnreadAnnouncements() {
+    return request({
+        url: '/announcements/unread',
+        method: 'get'
+    })
+}
+
+/**
+ * 标记公告为已读
+ */
+export function markAnnouncementAsRead(id) {
+    return request({
+        url: `/announcements/${id}/read`,
+        method: 'post'
+    })
+}
+

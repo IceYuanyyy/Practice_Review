@@ -63,10 +63,14 @@ public class JudgeQuestionImportListener extends AnalysisEventListener<JudgeQues
         try {
             Question question = convertToQuestion(data);
 
-            // 检查是否已存在相同内容的题目（同一科目下）
+            // 检查是否已存在相同内容的题目（同一科目+同一用户下）
             QueryWrapper<Question> wrapper = new QueryWrapper<>();
             wrapper.eq("content", question.getContent());
             wrapper.eq("subject", question.getSubject());
+            // 仅检查当前用户的题目，允许不同用户导入相同内容
+            if (userId != null) {
+                wrapper.eq("owner_id", userId);
+            }
             if (questionService.count(wrapper) > 0) {
                 log.warn("题目已存在，跳过: {}", question.getContent());
                 return;

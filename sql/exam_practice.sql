@@ -215,3 +215,18 @@ CREATE TABLE `announcement` (
   INDEX `idx_create_time`(`create_time` DESC) USING BTREE,
   INDEX `idx_user_id`(`user_id` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统公告表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for announcement_read (公告已读记录)
+-- ----------------------------
+DROP TABLE IF EXISTS `announcement_read`;
+CREATE TABLE `announcement_read` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `announcement_id` bigint NOT NULL COMMENT '公告ID',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '阅读时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_announcement`(`user_id` ASC, `announcement_id` ASC) USING BTREE,
+  INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
+  INDEX `idx_announcement_id`(`announcement_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '公告已读记录表' ROW_FORMAT = DYNAMIC;

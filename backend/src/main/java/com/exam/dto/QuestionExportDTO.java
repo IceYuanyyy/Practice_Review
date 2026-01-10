@@ -64,7 +64,20 @@ public class QuestionExportDTO {
     public static QuestionExportDTO fromQuestion(Question question) {
         QuestionExportDTO dto = new QuestionExportDTO();
         dto.setId(question.getId());
-        dto.setType(question.getType().equals("choice") ? "选择题" : "判断题");
+        // 根据题目类型转换为中文显示名称
+        String questionType = question.getType();
+        if ("single-choice".equals(questionType)) {
+            dto.setType("单选题");
+        } else if ("multiple-choice".equals(questionType)) {
+            dto.setType("多选题");
+        } else if ("judge".equals(questionType)) {
+            dto.setType("判断题");
+        } else if ("choice".equals(questionType)) {
+            // 旧版兼容：未区分单/多选的 choice 类型
+            dto.setType("选择题");
+        } else {
+            dto.setType(questionType);
+        }
         dto.setSubject(question.getSubject());
         dto.setContent(question.getContent());
         dto.setImageUrl(question.getImageUrl());
@@ -86,8 +99,10 @@ public class QuestionExportDTO {
         dto.setPracticeCount(question.getPracticeCount());
         dto.setWrongCount(question.getWrongCount());
         
-        // 处理选项
-        if (question.getType().equals("choice") && question.getOptions() != null) {
+        // 处理选项（选择题类型：choice、single-choice、multiple-choice）
+        String qType = question.getType();
+        boolean isChoiceType = "choice".equals(qType) || "single-choice".equals(qType) || "multiple-choice".equals(qType);
+        if (isChoiceType && question.getOptions() != null) {
             List<String> options = question.getOptions();
             for (String option : options) {
                 if (option.startsWith("A:")) {

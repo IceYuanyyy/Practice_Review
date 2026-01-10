@@ -74,6 +74,10 @@
              </template>
              VAPORIZE THIS VILLAIN?
           </n-popconfirm>
+
+          <button class="comic-btn btn-log" @click="handleViewRecords(user)" title="VIEW DATABASE">
+            <n-icon :component="DocumentTextOutline" />
+          </button>
         </div>
       </div>
     </div>
@@ -86,20 +90,45 @@
         @update:page="handlePageChange"
       />
     </div>
+
+    <!-- Records Modal -->
+    <n-modal v-model:show="showRecordsModal" preset="card" title="VILLAIN DOSSIER" style="width: 800px" class="comic-modal">
+      <div v-if="currentRecordUser" class="dossier-header">
+        Subject: <span class="dossier-name">{{ currentRecordUser.username }}</span>
+      </div>
+      <n-data-table
+        :columns="recordColumns"
+        :data="userRecords"
+        :loading="recordsLoading"
+        :pagination="false"
+        :bordered="false"
+        striped
+      />
+      <div class="dossier-pagination">
+        <n-pagination
+          v-model:page="recordsPagination.page"
+          :item-count="recordsPagination.itemCount"
+          :page-size="recordsPagination.pageSize"
+          @update:page="handleRecordPageChange"
+        />
+      </div>
+    </n-modal>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useMessage, NInput, NIcon, NSpin, NPagination, NPopconfirm } from 'naive-ui'
+import { ref, onMounted, h } from 'vue'
+import { useMessage, NInput, NIcon, NSpin, NPagination, NPopconfirm, NModal, NDataTable } from 'naive-ui'
 import { 
   SearchOutline, 
   LockClosedOutline, 
   LockOpenOutline, 
   FolderOpenOutline, 
-  FlameOutline 
+  FlameOutline,
+  DocumentTextOutline
 } from '@vicons/ionicons5'
 import request from '@/api/request'
+import { getPracticeRecords } from '@/api/practice'
 
 const message = useMessage()
 const loading = ref(false)
@@ -169,24 +198,89 @@ async function resetPassword(user) {
   }
 }
 
+
 async function deleteUser(user) {
   // 1. Trigger Animation
-  vaporizingIds.value.push(user.id);
+  vaporizingIds.value.push(user.id)
   
   // 2. Wait for animation
   setTimeout(async () => {
     try {
       await request.delete(`/admin/users/${user.id}`)
-      message.success('KABOOM! VILLAIN VAPORIZED.')
-      fetchUsers()
+      message.success('VILLAIN VAPORIZED!')
+      // Remove from list
+      users.value = users.value.filter(u => u.id !== user.id)
     } catch (e) {
-      console.error(e)
-      message.error('THE VILLAIN SURVIVED!')
-    } finally {
-      // Cleanup ID from array
-      vaporizingIds.value = vaporizingIds.value.filter(id => id !== user.id);
+      if (e.response && e.response.status === 403) {
+         message.error('YOU CANNOT VAPORIZE THE BOSS!')
+      } else {
+         message.error('VAPORIZER MALFUNCTION!')
+      }
+      // Revert animation state if failed (so it reappears)
+      vaporizingIds.value = vaporizingIds.value.filter(id => id !== user.id)
     }
   }, 800); // 800ms matches animation duration
+}
+
+// === Records Log Logic ===
+
+const showRecordsModal = ref(false)
+const currentRecordUser = ref(null)
+const userRecords = ref([])
+const recordsLoading = ref(false)
+const recordsPagination = ref({
+  page: 1,
+  pageSize: 10,
+  itemCount: 0
+})
+
+const recordColumns = [
+  { title: 'Time', key: 'practiceTime', render: (row) => new Date(row.practiceTime).toLocaleString() },
+  { title: 'Subject', key: 'questionSubject' },
+  { title: 'Type', key: 'questionType' },
+  { 
+    title: 'Result', 
+    key: 'isCorrect',
+    render: (row) => h(
+      'span', 
+      { style: { color: row.isCorrect ? '#10b981' : '#ef4444', fontWeight: 'bold' } }, 
+      row.isCorrect ? 'CORRECT' : 'WRONG'
+    ) 
+  },
+  { title: 'My Answer', key: 'userAnswer' },
+  { title: 'Right Answer', key: 'correctAnswer' }
+]
+
+const handleViewRecords = (user) => {
+  currentRecordUser.value = user
+  recordsPagination.value.page = 1
+  showRecordsModal.value = true
+  fetchUserRecords()
+}
+
+const fetchUserRecords = async () => {
+  if (!currentRecordUser.value) return
+  recordsLoading.value = true
+  try {
+    const res = await getPracticeRecords({
+      page: recordsPagination.value.page,
+      size: recordsPagination.value.pageSize,
+      userId: currentRecordUser.value.id
+    })
+    if (res.code === 200) {
+      userRecords.value = res.data.records
+      recordsPagination.value.itemCount = res.data.total
+    }
+  } catch (e) {
+    message.error('Failed to fetch dossier.')
+  } finally {
+    recordsLoading.value = false
+  }
+}
+
+const handleRecordPageChange = (page) => {
+  recordsPagination.value.page = page
+  fetchUserRecords()
 }
 </script>
 

@@ -30,6 +30,54 @@
 ## 📅 更新日志
 
 <details open>
+<summary>v1.1.4 (2026-01-11) · 🎨 Admin 漫感视觉 & 📂 转换追踪 & 🔐 导入防护</summary>
+
+- **🎨 后台视觉革命 (Admin UI)**:
+  - **Rogue's Gallery**: 用户管理页全面升级为 "恶人榜" (Admin Comic) 风格，采用 Bangers 字体与复古漫画网格布局
+  - **汽化动画**: 实现用户删除时的 "Vaporize" 汽化动效，配合位移、旋转与色彩偏移，提升后台操作爽感
+  - **Villain Dossier**: 将练习记录重构为 "罪犯档案" (Dossier)，采用 Naive UI 数据表格与漫画风 Modal 呈现
+- **📁 转换全链路追踪 (Backend/Frontend)**:
+  - **转换日志存储**: `ImportController` 新增 `convert-log` 接口，支持 Base64 格式的原始 TXT 与转换结果 Excel 入库追踪
+  - **双向追溯**: 支持管理员从操作日志直接下载题目转换的原始文本与生成的 Excel 文件
+  - **多端持久化**: 题库转换逻辑集成日志保存机制，确保每一批次导入都有迹可循
+- **🔐 导入与逻辑优化 (Core)**:
+  - **重名防护**: 导入题目时新增 SQL 级别校验，禁止在同一用户的同一题库下导入同名科目（基于 `owner_id` 隔离）
+  - **权限下放**: 修复管理员无法在该批次导出记录页面下载普通用户导入文件的权限逻辑问题
+  - **稳定性修复**: 解决 `UserManage.vue` 因动态导入失败导致的系统白屏风险，优化 Vite 编译构建缓存
+- **🖼️ 题目管理增强**:
+  - `POST /api/questions` 正式支持 `imageUrl` 字段，支持全自动图片解析与展示流程
+
+</details>
+
+<details>
+<summary>v1.1.4 (2026-01-11) · 🌓 昼夜交替 & �️ 管理增强 & 🕵️ 管理员侦查</summary>
+
+- **🌓 昼夜模式 (Feature)**:
+  - **全站适配**: 实现基于 `Pinia` + `Naive UI` 的深色模式切换功能
+  - **动态主题**: 通过 `NConfigProvider` 集成 `darkTheme`，自定义覆盖 20+ 组件配色
+  - **持久化配置**: 使用 `pinia-plugin-persistedstate` 自动记住用户的模式偏好
+  - **视觉优化**: 针对手绘风 (Comic Style) 进行专项适配，优化深色下的阴影、边框与对比度
+- **�️ 管理后台增强 (Feature)**:
+  - **用户档案库 (Dossier)**: 管理员可直接查看任意用户的练习历史记录
+  - **可视化清单**: 练习记录包含答题时间、科目、题型、用户答案、正确答案及判定结果
+  - **异常修复**: 修复 `UserManage` 中删除逻辑错误，重设 `vaporize` 粒子化删除动画
+- **�📢 强制公告阅读 (Feature)**:
+  - **仪式感确认**: 用户登录后自动弹窗展示未读公告，必须关闭弹窗（标记已读）方可继续，确保重要通知 100% 触达。
+  - **持久化追踪**: 引入 `announcement_read` 表记录用户阅读状态，跨设备同步。
+- **📊 个人练习数字档案 (Feature)**:
+  - **精细化回顾**: "统计分析"新增 "最近练习记录" 表格，支持查看历史每一题的用时、答案与结果。
+  - **管理员上帝视角**: `UserManage` 新增 "VILLAIN DOSSIER" (用户档案) 按钮。管理员可一键调阅任意用户的做题流水，支持分页追溯。
+- **🔍 智能筛选与保护 (UX/Security)**:
+  - **级联过滤器**: `QuestionManage` 实现 "导入用户 -> 归属科目" 的级联逻辑。管理员切换用户时，科目列表动态刷新，操作更精准。
+  - **命名冲突保护**: 导入题目时自动校验 "题库名称" 唯一性（针对当前用户），防止误操作导致的题库混淆。
+- **🐛 稳定性与体验修复**:
+  - **错题本上下文修复**: 解决错题练习模式下 "重置" 或 "退出" 导致模式丢失/跳转异常的问题。
+  - **答题卡实时渲染**: 修复错题模式下提交答案后答题卡状态不更新的 bug。
+  - **导航优化**: 全面优化退出练习的路由跳转逻辑，解决历史记录为空时的报错。
+
+</details>
+
+<details>
 <summary>v1.1.3 (2026-01-09) · 🔐 权限修复 &题库加载修复 & 🎯 UI 精简</summary>
 
 - **🐛 核心问题修复 (Backend)**:
@@ -127,6 +175,7 @@
 - ⭐ 题目收藏标记
 - 📈 练习次数与错题统计
 - 🎯 导入时可自定义科目名称
+- 🖼️ 支持题目图片显示与管理
 
 </td>
     <td width="50%">
@@ -155,6 +204,7 @@
 - 🔄 轮次刷题模式
 - 🎨 精美的答题界面
 - 📝 错题本专项练习
+- 🌓 昼夜模式切换与随心切换持久化
 
 </td>
     <td width="50%">
@@ -182,6 +232,7 @@
 - 👤 个人中心管理
 - 🔑 密码 BCrypt 加密
 - 🛡️ 用户数据隔离
+- 📧 邮箱验证与绑定流程
 
 </td>
     <td width="50%">
@@ -191,6 +242,7 @@
 - 📊 系统统计仪表盘
 - 📋 登录日志查询
 - 📝 操作日志查询（含导入/转换文件下载）
+- 🔍 用户练习记录全量穿透查看
 - 🔒 基于角色的访问控制
 - ⚙️ 系统健康监控
 
@@ -241,6 +293,7 @@ Vue Router 4.x     │ 官方路由管理器
 Pinia 2.x          │ 新一代状态管理
 Axios              │ HTTP客户端
 XLSX               │ Excel处理库
+pinia-plugin-persistedstate │ 状态持久化
 ```
 
 **核心特性：**
@@ -459,6 +512,7 @@ Final_Practice/
         │       ├── LoginLogs.vue       # 登录日志
         │       └── OperationLogs.vue   # 操作日志
         ├── components/                 # 公共组件
+        ├── utils/                      # 工具函数
         └── assets/                     # 静态资源
 ```
 
@@ -475,6 +529,8 @@ Final_Practice/
 | `/api/auth/logout` | POST | 用户登出 |
 | `/api/auth/user` | GET | 获取当前用户信息 |
 | `/api/auth/check` | GET | 检查登录状态 |
+| `/api/auth/send-code` | POST | 发送注册验证码 |
+| `/api/auth/bind-email` | POST | 绑定/验证邮箱 |
 
 ### 👤 用户中心接口
 
@@ -508,6 +564,8 @@ Final_Practice/
 | `/api/questions/{id}` | DELETE | 删除题目 |
 | `/api/questions/batch` | DELETE | 批量删除题目 |
 | `/api/questions/random` | GET | 随机获取题目 |
+| `/api/questions/clear` | DELETE | 清空题库 |
+| `/api/questions/{id}/mark` | PUT | 标记/取消收藏 |
 
 ### 📂 科目管理接口
 
@@ -533,6 +591,8 @@ Final_Practice/
 | `/api/import/template/choice` | GET | 下载选择题模板 |
 | `/api/import/template/judge` | GET | 下载判断题模板 |
 | `/api/export` | POST | 导出题目 |
+| `/api/export/all` | GET | 导出所有可见题目 |
+| `/api/import/convert-log` | POST | 保存转换日志 |
 
 ## 🎨 功能截图
 

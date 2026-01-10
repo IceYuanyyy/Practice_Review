@@ -848,4 +848,66 @@ public class PracticeController {
         
         return Result.success(result);
     }
+
+    // ==================== 练习记录查询 ====================
+
+    @Autowired
+    private com.exam.service.UserService userService;
+
+    /**
+     * 获取练习记录列表（分页，管理员可查看任意用户，普通用户只能查自己）
+     */
+    @GetMapping("/records")
+    public Result<PageResult<Map<String, Object>>> getPracticeRecords(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "20") Integer size,
+            @RequestParam(required = false) Long userId) {
+        
+        Long currentUserId = getCurrentUserId();
+        boolean isAdmin = userService.getById(currentUserId) != null 
+                && "admin".equals(userService.getById(currentUserId).getRole());
+        
+        // 权限检查：普通用户只能查自己
+        Long queryUserId = currentUserId;
+        if (isAdmin && userId != null) {
+            queryUserId = userId;
+        }
+        
+        Page<PracticeRecord> recordPage = new Page<>(page, size);
+        QueryWrapper<PracticeRecord> wrapper = new QueryWrapper<>();
+        wrapper.eq("user_id", queryUserId);
+        wrapper.orderByDesc("practice_time");
+        
+        practiceRecordService.page(recordPage, wrapper);
+        
+        // 组装返回数据，包含题目信息
+        List<Map<String, Object>> records = recordPage.getRecords().stream().map(record -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", record.getId());
+            map.put("userAnswer", record.getUserAnswer());
+            map.put("isCorrect", record.getIsCorrect());
+            map.put("practiceTime", record.getPracticeTime());
+            map.put("roundNumber", record.getRoundNumber());
+            
+            // 添加题目信息
+            Question question = questionService.getById(record.getQuestionId());
+            if (question != null) {
+                map.put("questionId", question.getId());
+                map.put("questionContent", question.getContent());
+                map.put("questionSubject", question.getSubject());
+                map.put("questionType", question.getType());
+                map.put("correctAnswer", question.getAnswer());
+            }
+            return map;
+        }).collect(Collectors.toList());
+        
+        PageResult<Map<String, Object>> pageResult = new PageResult<>(
+            records,
+            recordPage.getTotal(),
+            recordPage.getCurrent(),
+            recordPage.getSize()
+        );
+        
+        return Result.success(pageResult);
+    }
 }

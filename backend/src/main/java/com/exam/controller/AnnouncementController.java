@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -176,5 +177,32 @@ public class AnnouncementController {
         boolean success = announcementService.togglePinned(id, pinned);
         String msg = pinned ? "置顶成功" : "取消置顶成功";
         return success ? Result.success(msg) : Result.error("操作失败");
+    }
+
+    // ==================== 用户端已读管理 ====================
+
+    @Autowired
+    private com.exam.service.AnnouncementReadService announcementReadService;
+
+    /**
+     * 获取当前用户未读公告列表
+     */
+    @GetMapping("/announcements/unread")
+    @SaCheckLogin
+    public Result<List<Announcement>> getUnreadAnnouncements() {
+        Long userId = StpUtil.getLoginIdAsLong();
+        List<Announcement> unread = announcementReadService.getUnreadAnnouncements(userId);
+        return Result.success(unread);
+    }
+
+    /**
+     * 标记公告为已读
+     */
+    @PostMapping("/announcements/{id}/read")
+    @SaCheckLogin
+    public Result<String> markAsRead(@PathVariable Long id) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        boolean success = announcementReadService.markAsRead(userId, id);
+        return success ? Result.success("已标记为已读") : Result.error("标记失败");
     }
 }

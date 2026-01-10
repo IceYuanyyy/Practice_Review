@@ -1346,7 +1346,16 @@ const submitAnswer = async () => {
     else message.error('回答错误！')
     
     // 提交后刷新答题卡状态
-    fetchRoundResults()
+    if (isWrongBookMode.value) {
+      // 错题模式下手动更新本地答题卡状态（因为没有后端轮次状态）
+      // 1: 正确, 2: 错误
+      roundResults.value = {
+        ...roundResults.value,
+        [currentIndex.value + 1]: isCorrect.value ? 1 : 2
+      }
+    } else {
+      fetchRoundResults()
+    }
   } catch (error) {
     practiceStore.submitAnswer(userAnswer.value)
   }
@@ -1621,20 +1630,32 @@ const exitPractice = () => {
 
 const handleConfirmExit = () => {
   showExitModal.value = false
-  router.back()
+  // 使用 push 而非 back，防止历史记录为空时报错
+  router.push('/home')
 }
 
 // 确认重置逻辑 (From Modal)
 const confirmResetAction = async () => {
     try {
-    const resetRes = await resetRound(currentSubject.value, filters.ownerId)
-    if (resetRes.data && resetRes.data.question) {
-        applyRoundState(resetRes.data)
-        roundResults.value = {} // 清空答题卡状态
-        zenTime.value = 0 // 重置计时器
-        practiceHistory.value = [] // 清空做题历史
+    // 错题练习模式：重新开始错题练习
+    if (isWrongBookMode.value) {
+        await startWrongBookPracticeMode(wrongBookSubject.value)
+        roundResults.value = {}
+        zenTime.value = 0
+        practiceHistory.value = []
         historyIndex.value = -1
-        message.success('已重置本轮，轮次计数保持不变，加油再来一次！')
+        message.success('错题练习已重置，加油再来一次！')
+    } else {
+        // 普通模式：调用 resetRound API
+        const resetRes = await resetRound(currentSubject.value, filters.ownerId)
+        if (resetRes.data && resetRes.data.question) {
+            applyRoundState(resetRes.data)
+            roundResults.value = {} // 清空答题卡状态
+            zenTime.value = 0 // 重置计时器
+            practiceHistory.value = [] // 清空做题历史
+            historyIndex.value = -1
+            message.success('已重置本轮，轮次计数保持不变，加油再来一次！')
+        }
     }
     } catch (e) {
     message.error('重置失败，请重试')
@@ -1644,7 +1665,8 @@ const confirmResetAction = async () => {
 
 // 手动重置本轮（从按钮触发）
 const handleResetRound = () => {
-  if (!currentSubject.value) {
+  // 错题模式允许重置
+  if (!currentSubject.value && !isWrongBookMode.value) {
     message.warning('当前为随机模式，无法重置轮次')
     return
   }

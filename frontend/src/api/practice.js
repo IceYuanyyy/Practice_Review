@@ -190,3 +190,18 @@ export function nextWrongQuestion(params) {
     params
   })
 }
+
+// ==================== 练习记录查询 API ====================
+
+/**
+ * 获取练习记录列表（分页）
+ * @param {Object} params - { page, size, userId? }
+ */
+export function getPracticeRecords(params) {
+  return request({
+    url: '/practice/records',
+    method: 'get',
+    params
+  })
+}
+

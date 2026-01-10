@@ -1,5 +1,5 @@
 <template>
-  <n-config-provider :theme-overrides="themeOverrides">
+  <n-config-provider :theme="naiveTheme" :theme-overrides="themeOverrides">
     <n-message-provider>
       <n-dialog-provider>
         <n-notification-provider>
@@ -15,6 +15,11 @@ import { h, defineComponent, onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import { NConfigProvider, NMessageProvider, NDialogProvider, NNotificationProvider, useMessage, useDialog } from 'naive-ui'
 import { initMouseEffects } from '@/utils/mouseEffects'
+import { useThemeStore } from '@/stores/theme'
+import { storeToRefs } from 'pinia'
+
+const themeStore = useThemeStore()
+const { naiveTheme, themeOverrides } = storeToRefs(themeStore)
 
 // 全局 Provider 组件，用于暴露 message 到 window
 const GlobalProvider = defineComponent({
@@ -27,6 +32,7 @@ const GlobalProvider = defineComponent({
     // 初始化全局鼠标特效和显示系统更新提示
     onMounted(() => {
       initMouseEffects()
+      themeStore.applyTheme() // Ensure theme is applied on load
       
       // 检查是否已经显示过系统更新提示
       const hasShownNotice = localStorage.getItem('systemUpdateNoticeShown_2026')
@@ -54,28 +60,6 @@ const GlobalProvider = defineComponent({
     return () => h(RouterView)
   }
 })
-
-const themeOverrides = {
-  common: {
-    primaryColor: '#10b981', // 更清新现代的绿色 (Emerald 500)
-    primaryColorHover: '#34d399',
-    primaryColorPressed: '#059669',
-    primaryColorSuppl: '#34d399',
-    borderRadius: '8px', // 全局圆角
-    fontFamily: '"Inter", "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif'
-  },
-  Button: {
-    borderRadiusMedium: '8px',
-    fontWeight: '500' // 按钮字体加粗一点
-  },
-  Card: {
-    borderRadius: '16px', // 卡片圆角更大
-    boxShadow: '0 4px 20px 0 rgba(0, 0, 0, 0.03)' // 极柔和的阴影
-  },
-  Input: {
-    borderRadius: '8px'
-  }
-}
 </script>
 
 <style>

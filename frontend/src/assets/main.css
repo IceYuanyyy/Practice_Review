@@ -9,27 +9,72 @@
   --primary-hue: 160;
   --primary-sat: 84%;
   --primary-light: 39%;
-  --color-primary: hsl(var(--primary-hue), var(--primary-sat), var(--primary-light));       /* #10b981 */
-  --color-primary-hover: hsl(var(--primary-hue), var(--primary-sat), 45%);                  /* Lighter for hover */
-  --color-primary-active: hsl(var(--primary-hue), var(--primary-sat), 35%);                 /* Darker for active */
-  --color-primary-bg: hsl(var(--primary-hue), 90%, 96%);                                    /* Very light tint for backgrounds */
+  --color-primary: hsl(var(--primary-hue), var(--primary-sat), var(--primary-light));
+  /* #10b981 */
+  --color-primary-hover: hsl(var(--primary-hue), var(--primary-sat), 45%);
+  /* Lighter for hover */
+  --color-primary-active: hsl(var(--primary-hue), var(--primary-sat), 35%);
+  /* Darker for active */
+  --color-primary-bg: hsl(var(--primary-hue), 90%, 96%);
+  /* Very light tint for backgrounds */
 
   /* Secondary/Accent (Indigo - Depth, Wisdom / Coral - Action) */
-  --color-secondary: hsl(226, 70%, 55%);  /* Soft Indigo #4f46e5 */
-  --color-accent: hsl(24, 95%, 60%);      /* Energetic Coral #f97316 */
+  --color-secondary: hsl(226, 70%, 55%);
+  /* Soft Indigo #4f46e5 */
+  --color-accent: hsl(24, 95%, 60%);
+  /* Energetic Coral #f97316 */
 
   /* Neutral Scale (Slate - Professional, Clean) */
   --color-n-0: #ffffff;
-  --color-n-50: #f8fafc;  /* Main App Background */
-  --color-n-100: #f1f5f9; /* Secondary Background */
-  --color-n-200: #e2e8f0; /* Borders */
-  --color-n-300: #cbd5e1; /* Icons/Disabled */
-  --color-n-400: #94a3b8; /* Secondary Text */
-  --color-n-500: #64748b; /* Main Text */
-  --color-n-600: #475569; /* Headings */
+  --color-n-50: #f8fafc;
+  /* Main App Background */
+  --color-n-100: #f1f5f9;
+  /* Secondary Background */
+  --color-n-200: #e2e8f0;
+  /* Borders */
+  --color-n-300: #cbd5e1;
+  /* Icons/Disabled */
+  --color-n-400: #94a3b8;
+  /* Secondary Text */
+  --color-n-500: #64748b;
+  /* Main Text */
+  --color-n-600: #475569;
+  /* Headings */
   --color-n-700: #334155;
-  --color-n-800: #1e293b; /* Darkest Text */
-  --color-n-900: #0f172a; /* Deep Backgrounds */
+  --color-n-800: #1e293b;
+  /* Darkest Text */
+  --color-n-900: #0f172a;
+  /* Deep Backgrounds */
+
+  /* Dark Mode Overrides */
+  &.dark {
+    --color-n-0: #1e293b;
+    /* Surface -> Dark Slate 800 */
+    --color-n-50: #0f172a;
+    /* Bg -> Dark Slate 900 */
+    --color-n-100: #1e293b;
+    /* Secondary Bg -> Slate 800 */
+    --color-n-200: #334155;
+    /* Borders -> Slate 700 */
+    --color-n-300: #475569;
+    /* Icons -> Slate 600 */
+    --color-n-400: #94a3b8;
+    /* Secondary Text -> Slate 400 */
+    --color-n-500: #cbd5e1;
+    /* Main Text -> Slate 300 */
+    --color-n-600: #e2e8f0;
+    /* Headings -> Slate 200 */
+    --color-n-700: #f1f5f9;
+    --color-n-800: #f8fafc;
+    /* Lightest Text */
+    --color-n-900: #ffffff;
+
+    --color-primary-bg: #132e27;
+    /* Darker tint for primary bg */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+  }
 
   /* Semantic Colors */
   --color-success: hsl(150, 100%, 35%);
@@ -40,22 +85,19 @@
   /* =================================================================
      Shadows (Soft, Diffused, Expensive-looking)
      ================================================================= */
-  
+
   /* Small: Buttons, Inputs */
-  --shadow-sm: 
-    0 1px 2px rgba(0, 0, 0, 0.04), 
-    0 1px 1px rgba(0, 0, 0, 0.02);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04),
+  0 1px 1px rgba(0, 0, 0, 0.02);
 
   /* Medium: Cards, Dropdowns */
-  --shadow-md: 
-    0 4px 6px -1px rgba(0, 0, 0, 0.05),
-    0 2px 4px -1px rgba(0, 0, 0, 0.03),
-    0 10px 15px -3px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+  0 2px 4px -1px rgba(0, 0, 0, 0.03),
+  0 10px 15px -3px rgba(0, 0, 0, 0.03);
 
   /* Large: Modals, Floating Elements */
-  --shadow-lg: 
-    0 20px 25px -5px rgba(0, 0, 0, 0.05),
-    0 10px 10px -5px rgba(0, 0, 0, 0.02);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.05),
+  0 10px 10px -5px rgba(0, 0, 0, 0.02);
 
   /* Glow: Focused states */
   --shadow-glow-primary: 0 0 0 3px hsla(var(--primary-hue), var(--primary-sat), var(--primary-light), 0.2);
@@ -63,13 +105,52 @@
   /* =================================================================
      Typography & Layout
      ================================================================= */
-  --font-family-base: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-family-base: 'Outfit',
+  'Inter',
+  -apple-system,
+  BlinkMacSystemFont,
+  "Segoe UI",
+  Roboto,
+  "Helvetica Neue",
+  Arial,
+  sans-serif;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 20px;
   --radius-full: 9999px;
-  
+
   --transition-base: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark Mode Overrides */
+html.dark {
+  --color-n-0: #1e293b;
+  /* Surface -> Dark Slate 800 */
+  --color-n-50: #0f172a;
+  /* Bg -> Dark Slate 900 */
+  --color-n-100: #1e293b;
+  /* Secondary Bg -> Slate 800 */
+  --color-n-200: #334155;
+  /* Borders -> Slate 700 */
+  --color-n-300: #475569;
+  /* Icons -> Slate 600 */
+  --color-n-400: #94a3b8;
+  /* Secondary Text -> Slate 400 */
+  --color-n-500: #cbd5e1;
+  /* Main Text -> Slate 300 */
+  --color-n-600: #e2e8f0;
+  /* Headings -> Slate 200 */
+  --color-n-700: #f1f5f9;
+  --color-n-800: #f8fafc;
+  /* Lightest Text */
+  --color-n-900: #ffffff;
+
+  --color-primary-bg: #132e27;
+  /* Darker tint for primary bg */
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
 }
 
 /* Base Styles */
@@ -96,7 +177,8 @@ body {
 }
 
 .glass-dark {
-  background: rgba(15, 23, 42, 0.75); /* Dark Slate 900 base */
+  background: rgba(15, 23, 42, 0.75);
+  /* Dark Slate 900 base */
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -149,21 +231,26 @@ body {
 /* 1. Global Message/Toast System (Pill-shaped, Floating) */
 .n-message-container.n-message-container--top {
   top: 32px !important;
-  pointer-events: none; /* Allow clicks through empty space */
+  pointer-events: none;
+  /* Allow clicks through empty space */
 }
 
 .n-message-container .n-message {
   pointer-events: auto;
-  border-radius: 99px !important; /* Full pill shape */
+  border-radius: 99px !important;
+  /* Full pill shape */
   background: rgba(255, 255, 255, 0.98) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
-  box-shadow: 
-    0 8px 40px -4px rgba(0, 0, 0, 0.1), 
+  box-shadow:
+    0 8px 40px -4px rgba(0, 0, 0, 0.1),
     0 2px 10px -2px rgba(0, 0, 0, 0.05),
-    0 0 0 1px rgba(255, 255, 255, 0.8) inset !important; /* Inner highlight */
-  border: 1px solid rgba(226, 232, 240, 0.6) !important; /* Subtle border */
-  padding: 10px 24px 10px 14px !important; /* Balanced padding */
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset !important;
+  /* Inner highlight */
+  border: 1px solid rgba(226, 232, 240, 0.6) !important;
+  /* Subtle border */
+  padding: 10px 24px 10px 14px !important;
+  /* Balanced padding */
   margin-bottom: 16px !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -183,32 +270,40 @@ body {
   align-items: center !important;
   justify-content: center !important;
   font-size: 16px !important;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 /* Type-specific Styles */
 /* Success */
 .n-message--success-type .n-message__icon .n-icon {
-  background: #ecfdf5 !important; /* Emerald 50 */
-  color: #059669 !important;      /* Emerald 600 */
+  background: #ecfdf5 !important;
+  /* Emerald 50 */
+  color: #059669 !important;
+  /* Emerald 600 */
 }
 
 /* Error */
 .n-message--error-type .n-message__icon .n-icon {
-  background: #fff1f2 !important; /* Rose 50 */
-  color: #e11d48 !important;      /* Rose 600 */
+  background: #fff1f2 !important;
+  /* Rose 50 */
+  color: #e11d48 !important;
+  /* Rose 600 */
 }
 
 /* Warning */
 .n-message--warning-type .n-message__icon .n-icon {
-  background: #fffbeb !important; /* Amber 50 */
-  color: #d97706 !important;      /* Amber 600 */
+  background: #fffbeb !important;
+  /* Amber 50 */
+  color: #d97706 !important;
+  /* Amber 600 */
 }
 
 /* Info */
 .n-message--info-type .n-message__icon .n-icon {
-  background: #eff6ff !important; /* Blue 50 */
-  color: #2563eb !important;      /* Blue 600 */
+  background: #eff6ff !important;
+  /* Blue 50 */
+  color: #2563eb !important;
+  /* Blue 600 */
 }
 
 /* Loading */
@@ -223,7 +318,8 @@ body {
   font-family: var(--font-family-base) !important;
   font-weight: 600 !important;
   font-size: 14px !important;
-  color: #334155 !important; /* Slate 700 */
+  color: #334155 !important;
+  /* Slate 700 */
   letter-spacing: -0.01em !important;
   line-height: 1.5 !important;
 }
@@ -237,7 +333,7 @@ body {
 
 .n-message .n-message__close:hover {
   color: #475569 !important;
-  background: rgba(0,0,0,0.05);
+  background: rgba(0, 0, 0, 0.05);
   border-radius: 50%;
 }
 
@@ -253,24 +349,32 @@ body {
 }
 
 @keyframes spin-rotate {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Global Content Skeleton/Shimmer Loading */
 .skeleton-loading {
-  background: linear-gradient(
-    90deg,
-    var(--color-n-100) 25%,
-    var(--color-n-200) 50%,
-    var(--color-n-100) 75%
-  );
+  background: linear-gradient(90deg,
+      var(--color-n-100) 25%,
+      var(--color-n-200) 50%,
+      var(--color-n-100) 75%);
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s infinite ease-in-out;
   border-radius: 8px;
 }
 
 @keyframes skeleton-loading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }

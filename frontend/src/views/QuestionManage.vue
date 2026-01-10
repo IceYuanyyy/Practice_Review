@@ -462,6 +462,39 @@ const handleFilterChange = () => {
   loadQuestions()
 }
 
+// === 级联筛选：ownerId 变化时重新加载科目 ===
+import { watch } from 'vue'
+watch(() => filters.ownerId, async (newVal) => {
+  // 清空当前科目选择
+  filters.subject = null
+  // 重新加载该用户的科目列表
+  await loadSubjectsWithOwner(newVal)
+  // 触发查询
+  handleFilterChange()
+})
+
+// 按 ownerId 加载科目列表
+const loadSubjectsWithOwner = async (ownerId) => {
+  try {
+    const res = await getAllSubjects(ownerId)
+    if (res.data) {
+      const options = res.data.map(subject => {
+        let label = `${subject.name} (${subject.questionCount})`
+        if (subject.ownerName) {
+          label += ` - ${subject.ownerName}`
+        }
+        return { label, value: subject.name }
+      })
+      subjectOptions.value = [
+        { label: '全部科目', value: null },
+        ...options
+      ]
+    }
+  } catch (error) {
+    console.error('加载科目列表失败', error)
+  }
+}
+
 // 题目列表
 const questions = ref([])
 
