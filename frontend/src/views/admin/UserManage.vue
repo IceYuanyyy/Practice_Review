@@ -92,7 +92,7 @@
     </div>
 
     <!-- Records Modal -->
-    <n-modal v-model:show="showRecordsModal" preset="card" title="VILLAIN DOSSIER" style="width: 800px" class="comic-modal">
+    <n-modal v-model:show="showRecordsModal" preset="card" title="VILLAIN DOSSIER" style="width: 1100px" class="comic-modal">
       <div v-if="currentRecordUser" class="dossier-header">
         Subject: <span class="dossier-name">{{ currentRecordUser.username }}</span>
       </div>
@@ -235,20 +235,41 @@ const recordsPagination = ref({
 })
 
 const recordColumns = [
-  { title: 'Time', key: 'practiceTime', render: (row) => new Date(row.practiceTime).toLocaleString() },
-  { title: 'Subject', key: 'questionSubject' },
-  { title: 'Type', key: 'questionType' },
+  { title: 'Time', key: 'practiceTime', width: 150, render: (row) => new Date(row.practiceTime).toLocaleString() },
+  { title: 'ID', key: 'questionId', width: 60 },
+  { title: 'Subject', key: 'questionSubject', width: 80 },
+  { title: 'Type', key: 'questionType', width: 100 },
+  { 
+    title: 'Question', 
+    key: 'questionContent',
+    ellipsis: { tooltip: true },  // 超长内容显示 tooltip
+    render: (row) => h(
+      'span',
+      { 
+        style: { 
+          maxWidth: '300px', 
+          overflow: 'hidden', 
+          textOverflow: 'ellipsis',
+          display: 'inline-block',
+          whiteSpace: 'nowrap'
+        },
+        title: row.questionContent  // 鼠标悬停时显示完整内容
+      },
+      row.questionContent || '-'
+    )
+  },
   { 
     title: 'Result', 
     key: 'isCorrect',
+    width: 80,
     render: (row) => h(
       'span', 
       { style: { color: row.isCorrect ? '#10b981' : '#ef4444', fontWeight: 'bold' } }, 
       row.isCorrect ? 'CORRECT' : 'WRONG'
     ) 
   },
-  { title: 'My Answer', key: 'userAnswer' },
-  { title: 'Right Answer', key: 'correctAnswer' }
+  { title: 'My Answer', key: 'userAnswer', width: 90 },
+  { title: 'Right Answer', key: 'correctAnswer', width: 100 }
 ]
 
 const handleViewRecords = (user) => {
