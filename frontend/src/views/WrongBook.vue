@@ -82,9 +82,30 @@
           </n-button>
         </div>
       </div>
+      
+      <!-- 搜索工具栏 (新增) -->
+      <div class="search-toolbar">
+         <n-select 
+            v-model:value="filterSubject" 
+            :options="subjectOptions" 
+            clearable 
+            placeholder="按科目筛选" 
+            class="filter-select"
+            @update:value="handleFilterChange"
+         />
+         <n-input 
+            v-model:value="searchKeyword" 
+            placeholder="搜索题目名称" 
+            clearable 
+            class="filter-input"
+            @keyup.enter="handleFilterChange"
+         >
+            <template #prefix><n-icon :component="SearchOutline" /></template>
+         </n-input>
+      </div>
 
     <!-- 空状态 -->
-    <div v-if="practiceStore.wrongQuestions.length === 0" class="empty-wall">
+    <div v-if="wrongQuestions.length === 0" class="empty-wall">
        <div class="empty-sketch">
          <n-icon :component="HappyOutline" size="80" color="#cbd5e1" />
          <p>墙面空空如也，太棒了！</p>
@@ -140,6 +161,9 @@
               </n-button>
               <n-button text class="action-link retake" @click="retakeQuestion(question)">
                 重练
+              </n-button>
+              <n-button text class="action-link remove" @click="handleDelete(question.id)">
+                🗑️ 删除
               </n-button>
             </div>
             
@@ -208,7 +232,7 @@ import { useRouter } from 'vue-router'
 import { NIcon, NButton, NInput, NPagination, NCard, NForm, NFormItem, NSelect, NModal, NAlert, NSpace, NText, useDialog, useMessage } from 'naive-ui'
 import { TrashOutline, SearchOutline, HappyOutline, RefreshOutline } from '@vicons/ionicons5'
 import { usePracticeStore } from '@/stores/practice'
-import { clearWrongBook as clearWrongBookApi, getWrongBookPage, markMastered, getWrongBookSubjects } from '@/api/practice'
+import { clearWrongBook as clearWrongBookApi, getWrongBookPage, markMastered, getWrongBookSubjects, deleteWrongQuestion } from '@/api/practice'
 
 const router = useRouter()
 const dialog = useDialog()
@@ -229,6 +253,7 @@ const clearSubject = ref(null)
 const totalCount = ref(0)
 const loading = ref(false)
 const searchKeyword = ref('')
+const filterSubject = ref(null) // Wall items filter
 
 // 科目筛选相关
 const subjectStats = ref({})
@@ -241,7 +266,9 @@ const loadWrongQuestions = async () => {
   try {
     const res = await getWrongBookPage({
       page: currentPage.value,
-      size: pageSize.value
+      size: pageSize.value,
+      subject: filterSubject.value,
+      keyword: searchKeyword.value
     })
     
     if (res.data) {
@@ -393,6 +420,24 @@ const retakeQuestion = (question) => {
     query: { wrongBookSubject: question.subject }
   })
   message.success(`开始复习「${question.subject}」的错题`)
+}
+
+const handleFilterChange = () => {
+  currentPage.value = 1
+  loadWrongQuestions()
+}
+
+const handleDelete = async (id) => {
+  try {
+    await deleteWrongQuestion(id)
+    message.success('已从错题本移除')
+    // Refresh list
+    await loadWrongQuestions()
+    await loadSubjectStats() // Refresh stats
+  } catch (error) {
+    console.error('删除失败', error)
+    message.error('删除失败')
+  }
 }
 </script>
 
@@ -646,6 +691,28 @@ const retakeQuestion = (question) => {
   z-index: -1;
   transform: rotate(-1deg);
   border-radius: 4px;
+}
+
+/* Search Toolbar */
+.search-toolbar {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 0 10px;
+}
+.filter-select {
+  width: 240px;
+}
+:deep(.filter-select .n-base-selection) {
+    font-family: 'Patrick Hand', cursive;
+    border-radius: 8px;
+}
+.filter-input {
+  flex: 1;
+  max-width: 400px;
+}
+:deep(.filter-input .n-input__border), :deep(.filter-input .n-input__state-border) {
+    border-radius: 8px;
 }
 
 .stats-decoration {

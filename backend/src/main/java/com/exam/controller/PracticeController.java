@@ -357,7 +357,28 @@ public class PracticeController {
         wrapper.eq("user_id", userId).eq("is_correct", false);
         practiceRecordService.remove(wrapper);
         
+
         return Result.success("已清空错题本");
+    }
+
+    /**
+     * 删除单个错题
+     *
+     * @param questionId 题目ID
+     * @return 结果
+     */
+    @DeleteMapping("/wrong-book/{questionId}")
+    public Result<String> deleteWrongQuestion(@PathVariable Long questionId) {
+        Long userId = getCurrentUserId();
+        List<Long> ids = java.util.Collections.singletonList(questionId);
+        
+        // Remove from wrong book
+        wrongBookService.removeByQuestionIds(userId, ids);
+        
+        // Clear stats
+        userQuestionStatsService.clearWrongRecordsByQuestionIds(userId, ids);
+        
+        return Result.success("已删除该错题");
     }
 
     /**
@@ -697,10 +718,12 @@ public class PracticeController {
     @GetMapping("/wrong-book/list")
     public Result<PageResult<Question>> getWrongBookPage(
             @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size) {
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String subject,
+            @RequestParam(required = false) String keyword) {
         
         Long userId = getCurrentUserId();
-        Page<Question> questionPage = wrongBookService.getWrongQuestionPage(userId, (long) page, (long) size);
+        Page<Question> questionPage = wrongBookService.getWrongQuestionPage(userId, (long) page, (long) size, subject, keyword);
         
         PageResult<Question> result = new PageResult<>(
                 questionPage.getRecords(),

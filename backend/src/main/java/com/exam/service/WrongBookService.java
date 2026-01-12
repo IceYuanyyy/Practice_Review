@@ -21,9 +21,11 @@ public interface WrongBookService extends IService<WrongBook> {
      * @param userId 用户ID
      * @param page 当前页
      * @param size 每页条数
+     * @param subject 科目筛选
+     * @param keyword 关键词筛选
      * @return 分页结果（包含题目详情）
      */
-    Page<Question> getWrongQuestionPage(Long userId, Long page, Long size);
+    Page<Question> getWrongQuestionPage(Long userId, Long page, Long size, String subject, String keyword);
 
     /**
      * 添加错题到错题本

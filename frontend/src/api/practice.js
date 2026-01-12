@@ -44,6 +44,17 @@ export function clearWrongBook(subject) {
   })
 }
 
+/**
+ * 删除单个错题
+ * @param {number|string} questionId - 题目ID
+ */
+export function deleteWrongQuestion(questionId) {
+  return request({
+    url: `/practice/wrong-book/${questionId}`,
+    method: 'delete'
+  })
+}
+
 // ==================== 轮次刷题 API ====================
 
 /**

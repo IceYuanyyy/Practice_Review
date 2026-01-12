@@ -32,45 +32,69 @@ public class WrongBookServiceImpl extends ServiceImpl<WrongBookMapper, WrongBook
     private QuestionService questionService;
 
     @Override
-    public Page<Question> getWrongQuestionPage(Long userId, Long page, Long size) {
-        log.info("查询用户{}的错题本, page={}, size={}", userId, page, size);
+    public Page<Question> getWrongQuestionPage(Long userId, Long page, Long size, String subject, String keyword) {
+        log.info("查询用户{}的错题本, page={}, size={}, subject={}, keyword={}", userId, page, size, subject, keyword);
         
-        // 1. 分页查询错题本记录
-        Page<WrongBook> wrongBookPage = new Page<>(page, size);
+        // 1. 获取用户所有错题记录（按时间倒序）
+        // 因为题目信息在另一张表，需要先经过筛选才能进行正确的分页，所以这里先拉取所有记录
         LambdaQueryWrapper<WrongBook> wrapper = new LambdaQueryWrapper<>();
-        // 显示所有错题，不再按熟练度过滤（用户要求错题永久保留直到手动删除）
         wrapper.eq(WrongBook::getUserId, userId)
                .orderByDesc(WrongBook::getUpdateTime);
+        List<WrongBook> allWrongRecords = this.list(wrapper);
         
-        this.page(wrongBookPage, wrapper);
+        if (allWrongRecords.isEmpty()) {
+            return new Page<>(page, size);
+        }
         
-        // 2. 获取题目详情
-        List<Long> questionIds = wrongBookPage.getRecords().stream()
+        List<Long> allQuestionIds = allWrongRecords.stream()
                 .map(WrongBook::getQuestionId)
                 .collect(Collectors.toList());
         
-        Page<Question> questionPage = new Page<>();
-        questionPage.setCurrent(page);
-        questionPage.setSize(size);
-        questionPage.setTotal(wrongBookPage.getTotal());
+        // 2. 根据筛选条件查询题目
+        LambdaQueryWrapper<Question> qWrapper = new LambdaQueryWrapper<>();
+        qWrapper.in(Question::getId, allQuestionIds);
         
-        if (!questionIds.isEmpty()) {
-            List<Question> questions = questionService.listByIds(questionIds);
-            
-            // 使用 Map 按照 questionIds 的顺序重新排序，确保与错题本记录顺序一致
-            // Source: 解决 listByIds 不保证顺序的问题
-            Map<Long, Question> questionMap = questions.stream()
-                    .collect(Collectors.toMap(Question::getId, q -> q));
-            
-            List<Question> sortedQuestions = questionIds.stream()
-                    .map(questionMap::get)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-            
-            questionPage.setRecords(sortedQuestions);
+        if (subject != null && !subject.isEmpty()) {
+            qWrapper.eq(Question::getSubject, subject);
+        }
+        if (keyword != null && !keyword.isEmpty()) {
+            qWrapper.and(w -> w.like(Question::getContent, keyword)
+                             .or()
+                             .eq(Question::getId, keyword)); // 支持按ID搜索
         }
         
-        return questionPage;
+        List<Question> filteredQuestions = questionService.list(qWrapper);
+        Map<Long, Question> questionMap = filteredQuestions.stream()
+                .collect(Collectors.toMap(Question::getId, q -> q));
+        
+        // 3. 重新聚合和排序（保持错题本的时间顺序）
+        List<Question> resultList = allWrongRecords.stream()
+                .filter(wb -> questionMap.containsKey(wb.getQuestionId()))
+                .map(wb -> {
+                    Question q = questionMap.get(wb.getQuestionId());
+                    // 可以在这里设置错误次数等额外信息
+                    // q.setWrongCount(wb.getErrorCount()); 
+                    return q;
+                })
+                .collect(Collectors.toList());
+        
+        // 4. 内存分页
+        long total = resultList.size();
+        long start = (page - 1) * size;
+        List<Question> pageRecords;
+        
+        if (start >= total) {
+            pageRecords = java.util.Collections.emptyList();
+        } else {
+            long end = Math.min(start + size, total);
+            pageRecords = resultList.subList((int)start, (int)end);
+        }
+        
+        Page<Question> resultPage = new Page<>(page, size);
+        resultPage.setTotal(total);
+        resultPage.setRecords(pageRecords);
+        
+        return resultPage;
     }
 
     @Override
