@@ -40,6 +40,8 @@
   - **API 扩展**: 后端新增 `DELETE /wrong-book/{id}` 接口，完善错题本的 CRUD 能力
 - **🐛 核心修复 (Fix)**:
   - **数据持久化**: 修复清空浏览器 Cookie/缓存后错题本显示为空的 Bug（修正前端错误依赖 Store 状态的问题，改为直接依赖 API 数据）
+- **⚙️ 系统配置 (Config)**:
+  - **参数调优**: 优化 `application.yml` 配置，新增 Tomcat 线程池参数与文件上传大小限制 (10MB/20MB)，提升系统稳定性
 
 </details>
 
