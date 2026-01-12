@@ -32,9 +32,8 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/exam_practice?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-#    username: exam_practice
-    password: 123456
+    username: # name
+    password: # password
     
   # Jackson 配置
   jackson:
